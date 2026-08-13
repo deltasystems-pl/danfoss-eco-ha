@@ -22,5 +22,5 @@
   "issue_tracker": "https://github.com/deltasystems-pl/danfoss-eco-ha/issues",
   "loggers": ["custom_components.danfoss_eco"],
   "requirements": [],
-  "version": "1.2.3"
+  "version": "1.2.4"
 }
