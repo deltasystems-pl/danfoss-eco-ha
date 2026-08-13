@@ -96,11 +96,12 @@ class EtrvCoordinator(DataUpdateCoordinator[EtrvState]):
             state.rssi = info.rssi
             state.source = info.source
 
-        try:
-            parts = await self.client.read_schedule()
-            state.schedule = Schedule.parse(*parts)
-        except EtrvError as err:
-            _LOGGER.debug("%s: schedule read failed: %s", self.address, err)
+        parts = raw.get("schedule")
+        if parts:
+            try:
+                state.schedule = Schedule.parse(*parts)
+            except Exception as err:  # noqa: BLE001 - malformed payload, keep polling
+                _LOGGER.debug("%s: schedule parse failed: %s", self.address, err)
 
         if self._auto_time_sync and (
             state.errors.flags.get("e10_invalid_time")

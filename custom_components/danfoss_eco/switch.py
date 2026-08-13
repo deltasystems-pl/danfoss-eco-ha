@@ -17,6 +17,9 @@ from .const import DOMAIN
 from .coordinator import EtrvCoordinator
 from .protocol import Settings
 
+# Serialize BLE commands to one device at a time.
+PARALLEL_UPDATES = 1
+
 
 @dataclass(frozen=True, kw_only=True)
 class EtrvSwitchDescription(SwitchEntityDescription):

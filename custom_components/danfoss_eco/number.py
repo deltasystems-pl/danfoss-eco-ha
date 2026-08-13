@@ -21,6 +21,9 @@ from . import DanfossEcoConfigEntry
 from .const import DOMAIN
 from .coordinator import EtrvCoordinator, EtrvState
 
+# Serialize BLE commands to one device at a time.
+PARALLEL_UPDATES = 1
+
 
 @dataclass(frozen=True, kw_only=True)
 class EtrvNumberDescription(NumberEntityDescription):

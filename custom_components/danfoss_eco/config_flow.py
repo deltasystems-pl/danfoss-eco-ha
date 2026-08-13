@@ -188,6 +188,40 @@ class DanfossEcoConfigFlow(ConfigFlow, domain=DOMAIN):
             last_step=True,
         )
 
+    # -- reconfigure an existing entry (update key / PIN) -------------------
+    async def async_step_reconfigure(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
+        entry = self._get_reconfigure_entry()
+        errors: dict[str, str] = {}
+        if user_input is not None:
+            key = user_input[CONF_SECRET_KEY].strip().lower()
+            if not _KEY_RE.match(key):
+                errors[CONF_SECRET_KEY] = "invalid_key"
+            else:
+                return self.async_update_reload_and_abort(
+                    entry,
+                    data_updates={
+                        CONF_SECRET_KEY: key,
+                        CONF_PIN: int(user_input.get(CONF_PIN) or 0),
+                    },
+                )
+        return self.async_show_form(
+            step_id="reconfigure",
+            data_schema=vol.Schema(
+                {
+                    vol.Required(
+                        CONF_SECRET_KEY, default=entry.data.get(CONF_SECRET_KEY, "")
+                    ): str,
+                    vol.Optional(
+                        CONF_PIN, default=entry.data.get(CONF_PIN, DEFAULT_PIN)
+                    ): vol.All(vol.Coerce(int), vol.Range(min=0, max=9999)),
+                }
+            ),
+            errors=errors,
+            description_placeholders={"address": entry.data.get("address", "")},
+        )
+
     # -- manual key fallback ------------------------------------------------
     async def async_step_manual_key(
         self, user_input: dict[str, Any] | None = None

@@ -38,6 +38,14 @@
           "secret_key": "Sekretny klucz (32 znaki hex)",
           "pin": "PIN (0 = brak)"
         }
+      },
+      "reconfigure": {
+        "title": "Zaktualizuj klucz / PIN",
+        "description": "Zaktualizuj zapisany sekretny klucz lub PIN dla {address}. Pozostaw klucz bez zmian, aby zmienić tylko PIN.",
+        "data": {
+          "secret_key": "Sekretny klucz (32 znaki hex)",
+          "pin": "PIN (0 = brak)"
+        }
       }
     },
     "error": {
@@ -49,7 +57,8 @@
     },
     "abort": {
       "already_configured": "Ten termostat jest już skonfigurowany.",
-      "no_devices_found": "Nie wykryto termostatów Danfoss Eco. Upewnij się, że adapter lub proxy Bluetooth jest w zasięgu."
+      "no_devices_found": "Nie wykryto termostatów Danfoss Eco. Upewnij się, że adapter lub proxy Bluetooth jest w zasięgu.",
+      "reconfigure_successful": "Zaktualizowano klucz / PIN."
     }
   },
   "options": {

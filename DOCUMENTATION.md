@@ -243,6 +243,19 @@ Open the device's integration entry → **Configure**:
 
 Changing options reloads the entry (a brief reconnect).
 
+### Updating the secret key or PIN (reconfigure)
+
+If a device's key changes (e.g. you re-paired it in the Danfoss app) or you set a PIN
+later, you don't need to delete and re-add it. Open the device's integration entry →
+the three-dot menu → **Reconfigure**, and update the stored secret key and/or PIN.
+
+### Downloading diagnostics
+
+The entry's three-dot menu → **Download diagnostics** produces a JSON snapshot of the
+current state (temperatures, mode, settings, errors, RSSI, schedule) for troubleshooting
+or bug reports. **The secret key and Bluetooth address are redacted** so the file is safe
+to share.
+
 ---
 
 ## 9. Services

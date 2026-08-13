@@ -13,6 +13,9 @@ from . import DanfossEcoConfigEntry
 from .const import DOMAIN
 from .coordinator import EtrvCoordinator
 
+# Serialize BLE commands to one device at a time.
+PARALLEL_UPDATES = 1
+
 
 async def async_setup_entry(
     hass: HomeAssistant,

@@ -117,8 +117,13 @@ class EtrvClient:
         except BleakError as err:
             raise EtrvError(f"Write {uuid[4:8]} failed: {err}") from err
 
-    async def read_state(self) -> dict[str, bytes | int]:
-        """One connection, full state read."""
+    async def read_state(self) -> dict[str, object]:
+        """One connection, full state read (including the weekly schedule).
+
+        The Danfoss Eco is a sleepy battery device, so everything is read in a
+        single connection per poll to minimise radio wake-ups. The schedule is
+        best-effort: devices that lack those characteristics still return state.
+        """
         async with self._lock:
             client = await self._connect()
             try:
@@ -127,26 +132,23 @@ class EtrvClient:
                 settings = await self._read(client, UUID_SETTINGS)
                 errors = await self._read(client, UUID_ERRORS)
                 device_time = await self._read(client, UUID_CURRENT_TIME)
+                schedule: tuple[bytes, bytes, bytes] | None = None
+                try:
+                    schedule = (
+                        await self._read(client, UUID_SCHEDULE_1),
+                        await self._read(client, UUID_SCHEDULE_2),
+                        await self._read(client, UUID_SCHEDULE_3),
+                    )
+                except EtrvError as err:
+                    _LOGGER.debug("%s: schedule read skipped: %s", self.address, err)
                 return {
                     "battery": battery,
                     "temperature": temperature,
                     "settings": settings,
                     "errors": errors,
                     "time": device_time,
+                    "schedule": schedule,
                 }
-            finally:
-                await client.disconnect()
-
-    async def read_schedule(self) -> tuple[bytes, bytes, bytes]:
-        """Read the three decrypted schedule characteristics (20/12/12 bytes)."""
-        async with self._lock:
-            client = await self._connect()
-            try:
-                return (
-                    await self._read(client, UUID_SCHEDULE_1),
-                    await self._read(client, UUID_SCHEDULE_2),
-                    await self._read(client, UUID_SCHEDULE_3),
-                )
             finally:
                 await client.disconnect()
 

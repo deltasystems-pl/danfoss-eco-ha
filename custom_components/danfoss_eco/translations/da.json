@@ -38,6 +38,14 @@
           "secret_key": "Hemmelig nøgle (32 hex-tegn)",
           "pin": "PIN (0 = ingen)"
         }
+      },
+      "reconfigure": {
+        "title": "Opdater nøgle / PIN",
+        "description": "Opdater den gemte hemmelige nøgle eller PIN for {address}. Lad nøglen være uændret for kun at ændre PIN.",
+        "data": {
+          "secret_key": "Hemmelig nøgle (32 hex-tegn)",
+          "pin": "PIN (0 = ingen)"
+        }
       }
     },
     "error": {
@@ -49,7 +57,8 @@
     },
     "abort": {
       "already_configured": "Denne termostat er allerede konfigureret.",
-      "no_devices_found": "Ingen Danfoss Eco termostater fundet. Sørg for, at en Bluetooth-adapter eller proxy er inden for rækkevidde."
+      "no_devices_found": "Ingen Danfoss Eco termostater fundet. Sørg for, at en Bluetooth-adapter eller proxy er inden for rækkevidde.",
+      "reconfigure_successful": "Nøgle / PIN opdateret."
     }
   },
   "options": {

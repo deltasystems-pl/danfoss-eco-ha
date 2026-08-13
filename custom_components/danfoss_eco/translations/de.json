@@ -38,6 +38,14 @@
           "secret_key": "Geheimschlüssel (32 Hex-Zeichen)",
           "pin": "PIN (0 = keine)"
         }
+      },
+      "reconfigure": {
+        "title": "Schlüssel / PIN aktualisieren",
+        "description": "Aktualisieren Sie den gespeicherten Geheimschlüssel oder die PIN für {address}. Lassen Sie den Schlüssel unverändert, um nur die PIN zu ändern.",
+        "data": {
+          "secret_key": "Geheimschlüssel (32 Hex-Zeichen)",
+          "pin": "PIN (0 = keine)"
+        }
       }
     },
     "error": {
@@ -49,7 +57,8 @@
     },
     "abort": {
       "already_configured": "Dieses Thermostat ist bereits konfiguriert.",
-      "no_devices_found": "Keine Danfoss Eco Thermostate gefunden. Stellen Sie sicher, dass ein Bluetooth-Adapter oder Proxy in Reichweite ist."
+      "no_devices_found": "Keine Danfoss Eco Thermostate gefunden. Stellen Sie sicher, dass ein Bluetooth-Adapter oder Proxy in Reichweite ist.",
+      "reconfigure_successful": "Schlüssel / PIN aktualisiert."
     }
   },
   "options": {
