@@ -1,0 +1,10 @@
+__pycache__/
+*.pyc
+.venv/
+venv/
+.idea/
+.vscode/
+*.log
+
+# CI workflow kept local until gh token has workflow scope
+.github/

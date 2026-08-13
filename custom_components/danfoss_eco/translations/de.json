@@ -1,0 +1,148 @@
+{
+  "config": {
+    "flow_title": "Danfoss Eco {name}",
+    "step": {
+      "confirm": {
+        "title": "Danfoss Eco Thermostat gefunden",
+        "description": "In der Nähe wurde ein Danfoss Eco Heizkörperthermostat ({address}) erkannt. Möchten Sie es einrichten?"
+      },
+      "user": {
+        "title": "Thermostat auswählen",
+        "data": {
+          "device": "Erkannte Danfoss Eco Thermostate"
+        }
+      },
+      "pair": {
+        "title": "Mit dem Thermostat koppeln",
+        "description": "Gehen Sie zum Heizkörper ({address}) und drücken Sie KURZ die Timer-Taste (Uhr) am Thermostat, dann sofort unten auf SENDEN klicken.\n\nTipp: Drücken Sie die Taste während des Kopplens etwa alle 10 Sekunden — das Kopplungsfenster ist kurz. PIN, MAC oder Schlüssel müssen nicht eingegeben werden."
+      },
+      "manual_key": {
+        "title": "Schlüssel manuell eingeben",
+        "description": "Wenn Sie den 32-stelligen Geheimschlüssel dieses Thermostats bereits kennen (z. B. aus etrv2mqtt oder libetrv), fügen Sie ihn hier ein.",
+        "data": {
+          "secret_key": "Geheimschlüssel (32 Hex-Zeichen)"
+        }
+      },
+      "pair_menu": {
+        "title": "Kopplungsmethode",
+        "menu_options": {
+          "pair": "Automatisch koppeln (Taste am Thermostat drücken)",
+          "manual_key": "Geheimschlüssel manuell eingeben"
+        }
+      }
+    },
+    "error": {
+      "button_not_pressed": "Das Kopplungsfenster war nicht offen. Drücken Sie kurz die Timer-Taste und klicken Sie sofort erneut auf Senden.",
+      "not_in_range": "Das Thermostat wird von keinem Bluetooth-Adapter/Proxy gesehen. Proxy näher platzieren oder Batterien prüfen.",
+      "cannot_connect": "Verbindung zum Thermostat fehlgeschlagen. Reichweite prüfen und erneut versuchen.",
+      "invalid_key": "Der Schlüssel muss genau 32 Hexadezimalzeichen haben."
+    },
+    "abort": {
+      "already_configured": "Dieses Thermostat ist bereits konfiguriert.",
+      "no_devices_found": "Keine Danfoss Eco Thermostate gefunden. Stellen Sie sicher, dass ein Bluetooth-Adapter oder Proxy in Reichweite ist."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Danfoss Eco Optionen",
+        "data": {
+          "poll_interval": "Abfrageintervall (Minuten)",
+          "pin": "Geräte-PIN (0 = keine)",
+          "auto_time_sync": "Geräteuhr automatisch synchronisieren"
+        }
+      }
+    }
+  },
+  "entity": {
+    "sensor": {
+      "room_temperature": {
+        "name": "Raumtemperatur"
+      },
+      "rssi": {
+        "name": "Bluetooth-Signal"
+      },
+      "last_poll": {
+        "name": "Letzte Abfrage"
+      }
+    },
+    "binary_sensor": {
+      "problem": {
+        "name": "Problem"
+      }
+    },
+    "button": {
+      "sync_time": {
+        "name": "Zeit synchronisieren"
+      }
+    },
+    "switch": {
+      "child_lock": {
+        "name": "Tastensperre"
+      },
+      "adaptable_regulation": {
+        "name": "Adaptive Regelung"
+      },
+      "slow_regulation": {
+        "name": "Langsame Regelung"
+      },
+      "display_flip": {
+        "name": "Display drehen (180°)"
+      },
+      "vertical_installation": {
+        "name": "Vertikale Montage"
+      },
+      "valve_installed": {
+        "name": "Ventil montiert (Montagemodus)"
+      }
+    },
+    "number": {
+      "temperature_min": {
+        "name": "Minimale Solltemperatur"
+      },
+      "temperature_max": {
+        "name": "Maximale Solltemperatur"
+      },
+      "frost_protection": {
+        "name": "Frostschutztemperatur"
+      },
+      "vacation_temperature": {
+        "name": "Urlaubstemperatur"
+      }
+    }
+  },
+  "services": {
+    "sync_time": {
+      "name": "Zeit synchronisieren",
+      "description": "Schreibt die aktuelle Ortszeit auf das Thermostat (behebt Fehler E10).",
+      "fields": {
+        "device_id": {
+          "name": "Gerät",
+          "description": "Das zu synchronisierende Danfoss Eco Gerät."
+        }
+      }
+    },
+    "set_vacation": {
+      "name": "Urlaub einstellen",
+      "description": "Programmiert Urlaubszeitraum und -temperatur.",
+      "fields": {
+        "device_id": {
+          "name": "Gerät",
+          "description": "Das Danfoss Eco Gerät."
+        },
+        "temperature": {
+          "name": "Temperatur",
+          "description": "Urlaubstemperatur in °C."
+        },
+        "start": {
+          "name": "Beginn",
+          "description": "Startdatum/-zeit."
+        },
+        "end": {
+          "name": "Ende",
+          "description": "Enddatum/-zeit."
+        }
+      }
+    }
+  }
+}

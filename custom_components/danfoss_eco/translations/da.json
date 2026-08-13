@@ -1,0 +1,148 @@
+{
+  "config": {
+    "flow_title": "Danfoss Eco {name}",
+    "step": {
+      "confirm": {
+        "title": "Danfoss Eco termostat fundet",
+        "description": "En Danfoss Eco radiatortermostat ({address}) blev fundet i nærheden. Vil du konfigurere den?"
+      },
+      "user": {
+        "title": "Vælg termostat",
+        "data": {
+          "device": "Fundne Danfoss Eco termostater"
+        }
+      },
+      "pair": {
+        "title": "Par med termostaten",
+        "description": "Gå hen til radiatoren ({address}) og tryk KORT på timer-knappen (ur) på termostaten, og klik derefter straks på SEND nedenfor.\n\nTip: Tryk på knappen ca. hvert 10. sekund under parringen — parringsvinduet er kort. PIN, MAC eller nøgle behøves ikke."
+      },
+      "manual_key": {
+        "title": "Indtast nøgle manuelt",
+        "description": "Hvis du allerede kender termostatens 32-tegns hemmelige nøgle (fx fra etrv2mqtt eller libetrv), kan du indsætte den her.",
+        "data": {
+          "secret_key": "Hemmelig nøgle (32 hex-tegn)"
+        }
+      },
+      "pair_menu": {
+        "title": "Parringsmetode",
+        "menu_options": {
+          "pair": "Par automatisk (tryk på knappen på termostaten)",
+          "manual_key": "Indtast den hemmelige nøgle manuelt"
+        }
+      }
+    },
+    "error": {
+      "button_not_pressed": "Parringsvinduet var ikke åbent. Tryk kort på timer-knappen og klik straks på Send igen.",
+      "not_in_range": "Termostaten ses ikke af nogen Bluetooth-adapter/proxy. Flyt en proxy tættere på eller tjek batterierne.",
+      "cannot_connect": "Kunne ikke oprette forbindelse til termostaten. Kontrollér rækkevidden og prøv igen.",
+      "invalid_key": "Nøglen skal være præcis 32 hexadecimale tegn."
+    },
+    "abort": {
+      "already_configured": "Denne termostat er allerede konfigureret.",
+      "no_devices_found": "Ingen Danfoss Eco termostater fundet. Sørg for, at en Bluetooth-adapter eller proxy er inden for rækkevidde."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Danfoss Eco indstillinger",
+        "data": {
+          "poll_interval": "Polling-interval (minutter)",
+          "pin": "Enhedens PIN (0 = ingen)",
+          "auto_time_sync": "Synkroniser enhedens ur automatisk"
+        }
+      }
+    }
+  },
+  "entity": {
+    "sensor": {
+      "room_temperature": {
+        "name": "Rumtemperatur"
+      },
+      "rssi": {
+        "name": "Bluetooth-signal"
+      },
+      "last_poll": {
+        "name": "Seneste aflæsning"
+      }
+    },
+    "binary_sensor": {
+      "problem": {
+        "name": "Problem"
+      }
+    },
+    "button": {
+      "sync_time": {
+        "name": "Synkroniser tid"
+      }
+    },
+    "switch": {
+      "child_lock": {
+        "name": "Børnesikring (knapper)"
+      },
+      "adaptable_regulation": {
+        "name": "Adaptiv regulering"
+      },
+      "slow_regulation": {
+        "name": "Langsom regulering"
+      },
+      "display_flip": {
+        "name": "Vend display (180°)"
+      },
+      "vertical_installation": {
+        "name": "Lodret montering"
+      },
+      "valve_installed": {
+        "name": "Ventil monteret (montagetilstand)"
+      }
+    },
+    "number": {
+      "temperature_min": {
+        "name": "Minimum sætpunkt"
+      },
+      "temperature_max": {
+        "name": "Maksimum sætpunkt"
+      },
+      "frost_protection": {
+        "name": "Frostsikringstemperatur"
+      },
+      "vacation_temperature": {
+        "name": "Ferietemperatur"
+      }
+    }
+  },
+  "services": {
+    "sync_time": {
+      "name": "Synkroniser tid",
+      "description": "Skriver den aktuelle lokale tid til termostaten (retter fejl E10).",
+      "fields": {
+        "device_id": {
+          "name": "Enhed",
+          "description": "Danfoss Eco enheden der skal synkroniseres."
+        }
+      }
+    },
+    "set_vacation": {
+      "name": "Indstil ferie",
+      "description": "Programmerer ferieperiode og -temperatur.",
+      "fields": {
+        "device_id": {
+          "name": "Enhed",
+          "description": "Danfoss Eco enheden."
+        },
+        "temperature": {
+          "name": "Temperatur",
+          "description": "Ferietemperatur i °C."
+        },
+        "start": {
+          "name": "Start",
+          "description": "Startdato/-tid."
+        },
+        "end": {
+          "name": "Slut",
+          "description": "Slutdato/-tid."
+        }
+      }
+    }
+  }
+}

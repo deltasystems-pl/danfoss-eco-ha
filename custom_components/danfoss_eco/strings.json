@@ -1,0 +1,148 @@
+{
+  "config": {
+    "flow_title": "Danfoss Eco {name}",
+    "step": {
+      "confirm": {
+        "title": "Danfoss Eco thermostat found",
+        "description": "A Danfoss Eco radiator thermostat ({address}) was discovered nearby. Do you want to set it up?"
+      },
+      "user": {
+        "title": "Select thermostat",
+        "data": {
+          "device": "Discovered Danfoss Eco thermostats"
+        }
+      },
+      "pair": {
+        "title": "Pair with the thermostat",
+        "description": "Go to the radiator ({address}) and SHORT-PRESS the timer (clock) button on the thermostat, then immediately click SUBMIT below.\n\nTip: keep pressing the button every ~10 seconds while pairing — the window the device opens is short. No PIN, MAC or key entry is needed; the key is read automatically."
+      },
+      "manual_key": {
+        "title": "Enter secret key manually",
+        "description": "If you already know this thermostat's 32-character secret key (e.g. from etrv2mqtt or libetrv), paste it here.",
+        "data": {
+          "secret_key": "Secret key (32 hex characters)"
+        }
+      },
+      "pair_menu": {
+        "title": "Pairing method",
+        "menu_options": {
+          "pair": "Pair automatically (press the button on the thermostat)",
+          "manual_key": "Enter the secret key manually"
+        }
+      }
+    },
+    "error": {
+      "button_not_pressed": "The pairing window was not open. Short-press the timer button on the thermostat and click Submit again right away.",
+      "not_in_range": "The thermostat is not seen by any Bluetooth adapter or proxy. Move a proxy closer or check the batteries.",
+      "cannot_connect": "Could not connect to the thermostat. Make sure it is in range and try again.",
+      "invalid_key": "The key must be exactly 32 hexadecimal characters."
+    },
+    "abort": {
+      "already_configured": "This thermostat is already configured.",
+      "no_devices_found": "No Danfoss Eco thermostats were discovered. Make sure a Bluetooth adapter or proxy is in range."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Danfoss Eco options",
+        "data": {
+          "poll_interval": "Poll interval (minutes)",
+          "pin": "Device PIN (0 = none)",
+          "auto_time_sync": "Automatically sync the device clock"
+        }
+      }
+    }
+  },
+  "entity": {
+    "sensor": {
+      "room_temperature": {
+        "name": "Room temperature"
+      },
+      "rssi": {
+        "name": "Bluetooth signal"
+      },
+      "last_poll": {
+        "name": "Last poll"
+      }
+    },
+    "binary_sensor": {
+      "problem": {
+        "name": "Problem"
+      }
+    },
+    "button": {
+      "sync_time": {
+        "name": "Sync time"
+      }
+    },
+    "switch": {
+      "child_lock": {
+        "name": "Child lock (buttons)"
+      },
+      "adaptable_regulation": {
+        "name": "Adaptive regulation"
+      },
+      "slow_regulation": {
+        "name": "Slow regulation"
+      },
+      "display_flip": {
+        "name": "Display flip (180°)"
+      },
+      "vertical_installation": {
+        "name": "Vertical installation"
+      },
+      "valve_installed": {
+        "name": "Valve installed (montage mode)"
+      }
+    },
+    "number": {
+      "temperature_min": {
+        "name": "Minimum setpoint"
+      },
+      "temperature_max": {
+        "name": "Maximum setpoint"
+      },
+      "frost_protection": {
+        "name": "Frost protection temperature"
+      },
+      "vacation_temperature": {
+        "name": "Vacation temperature"
+      }
+    }
+  },
+  "services": {
+    "sync_time": {
+      "name": "Sync time",
+      "description": "Writes the current local time to the thermostat (fixes the E10 error).",
+      "fields": {
+        "device_id": {
+          "name": "Device",
+          "description": "The Danfoss Eco device to sync."
+        }
+      }
+    },
+    "set_vacation": {
+      "name": "Set vacation",
+      "description": "Programs the vacation period and temperature.",
+      "fields": {
+        "device_id": {
+          "name": "Device",
+          "description": "The Danfoss Eco device."
+        },
+        "temperature": {
+          "name": "Temperature",
+          "description": "Vacation temperature in °C."
+        },
+        "start": {
+          "name": "Start",
+          "description": "Vacation start date/time."
+        },
+        "end": {
+          "name": "End",
+          "description": "Vacation end date/time."
+        }
+      }
+    }
+  }
+}

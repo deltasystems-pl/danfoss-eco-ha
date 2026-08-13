@@ -1,0 +1,148 @@
+{
+  "config": {
+    "flow_title": "Danfoss Eco {name}",
+    "step": {
+      "confirm": {
+        "title": "Znaleziono termostat Danfoss Eco",
+        "description": "W pobliżu wykryto termostat grzejnikowy Danfoss Eco ({address}). Czy chcesz go skonfigurować?"
+      },
+      "user": {
+        "title": "Wybierz termostat",
+        "data": {
+          "device": "Wykryte termostaty Danfoss Eco"
+        }
+      },
+      "pair": {
+        "title": "Parowanie z termostatem",
+        "description": "Podejdź do grzejnika ({address}) i KRÓTKO naciśnij przycisk zegara na termostacie, a następnie od razu kliknij ZATWIERDŹ poniżej.\n\nWskazówka: naciskaj przycisk co ~10 sekund podczas parowania — okno parowania jest krótkie. Nie trzeba wpisywać PIN-u, adresu MAC ani klucza — klucz zostanie odczytany automatycznie."
+      },
+      "manual_key": {
+        "title": "Ręczne wprowadzenie klucza",
+        "description": "Jeśli znasz już 32-znakowy sekretny klucz tego termostatu (np. z etrv2mqtt lub libetrv), wklej go tutaj.",
+        "data": {
+          "secret_key": "Sekretny klucz (32 znaki hex)"
+        }
+      },
+      "pair_menu": {
+        "title": "Metoda parowania",
+        "menu_options": {
+          "pair": "Paruj automatycznie (naciśnij przycisk na termostacie)",
+          "manual_key": "Wprowadź sekretny klucz ręcznie"
+        }
+      }
+    },
+    "error": {
+      "button_not_pressed": "Okno parowania nie było otwarte. Krótko naciśnij przycisk zegara na termostacie i natychmiast kliknij Zatwierdź ponownie.",
+      "not_in_range": "Termostat nie jest widoczny przez żaden adapter/proxy Bluetooth. Przybliż proxy lub sprawdź baterie.",
+      "cannot_connect": "Nie udało się połączyć z termostatem. Upewnij się, że jest w zasięgu i spróbuj ponownie.",
+      "invalid_key": "Klucz musi mieć dokładnie 32 znaki szesnastkowe."
+    },
+    "abort": {
+      "already_configured": "Ten termostat jest już skonfigurowany.",
+      "no_devices_found": "Nie wykryto termostatów Danfoss Eco. Upewnij się, że adapter lub proxy Bluetooth jest w zasięgu."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Opcje Danfoss Eco",
+        "data": {
+          "poll_interval": "Częstotliwość odpytywania (minuty)",
+          "pin": "PIN urządzenia (0 = brak)",
+          "auto_time_sync": "Automatycznie synchronizuj zegar urządzenia"
+        }
+      }
+    }
+  },
+  "entity": {
+    "sensor": {
+      "room_temperature": {
+        "name": "Temperatura pokojowa"
+      },
+      "rssi": {
+        "name": "Sygnał Bluetooth"
+      },
+      "last_poll": {
+        "name": "Ostatni odczyt"
+      }
+    },
+    "binary_sensor": {
+      "problem": {
+        "name": "Problem"
+      }
+    },
+    "button": {
+      "sync_time": {
+        "name": "Synchronizuj czas"
+      }
+    },
+    "switch": {
+      "child_lock": {
+        "name": "Blokada przycisków"
+      },
+      "adaptable_regulation": {
+        "name": "Regulacja adaptacyjna"
+      },
+      "slow_regulation": {
+        "name": "Wolna regulacja"
+      },
+      "display_flip": {
+        "name": "Obrót wyświetlacza (180°)"
+      },
+      "vertical_installation": {
+        "name": "Montaż pionowy"
+      },
+      "valve_installed": {
+        "name": "Zawór zamontowany (tryb montażu)"
+      }
+    },
+    "number": {
+      "temperature_min": {
+        "name": "Minimalna temperatura zadana"
+      },
+      "temperature_max": {
+        "name": "Maksymalna temperatura zadana"
+      },
+      "frost_protection": {
+        "name": "Ochrona przeciwzamrożeniowa"
+      },
+      "vacation_temperature": {
+        "name": "Temperatura wakacyjna"
+      }
+    }
+  },
+  "services": {
+    "sync_time": {
+      "name": "Synchronizuj czas",
+      "description": "Zapisuje bieżący czas lokalny w termostacie (usuwa błąd E10).",
+      "fields": {
+        "device_id": {
+          "name": "Urządzenie",
+          "description": "Termostat Danfoss Eco do synchronizacji."
+        }
+      }
+    },
+    "set_vacation": {
+      "name": "Ustaw tryb wakacyjny",
+      "description": "Programuje okres wakacyjny i temperaturę.",
+      "fields": {
+        "device_id": {
+          "name": "Urządzenie",
+          "description": "Termostat Danfoss Eco."
+        },
+        "temperature": {
+          "name": "Temperatura",
+          "description": "Temperatura wakacyjna w °C."
+        },
+        "start": {
+          "name": "Początek",
+          "description": "Data/godzina rozpoczęcia."
+        },
+        "end": {
+          "name": "Koniec",
+          "description": "Data/godzina zakończenia."
+        }
+      }
+    }
+  }
+}
