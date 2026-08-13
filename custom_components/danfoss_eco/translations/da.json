@@ -46,6 +46,14 @@
           "secret_key": "Hemmelig nøgle (32 hex-tegn)",
           "pin": "PIN (0 = ingen)"
         }
+      },
+      "no_devices": {
+        "title": "Ingen termostat fundet",
+        "description": "Der blev endnu ikke fundet en Danfoss Eco termostat i nærheden.\n\nGå hen til radiatoren og tryk på knappen på termostaten for at vække den, sørg for at en Bluetooth-adapter eller proxy er inden for rækkevidde, og vælg derefter Søg igen. Manuel indtastning er kun nødvendig, hvis enheden ikke kan findes.",
+        "menu_options": {
+          "rescan": "🔍 Søg igen",
+          "manual": "✏️ Tilføj manuelt (avanceret)"
+        }
       }
     },
     "error": {

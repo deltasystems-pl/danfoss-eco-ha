@@ -46,6 +46,14 @@
           "secret_key": "Geheimschlüssel (32 Hex-Zeichen)",
           "pin": "PIN (0 = keine)"
         }
+      },
+      "no_devices": {
+        "title": "Kein Thermostat erkannt",
+        "description": "Es wurde noch kein Danfoss Eco Thermostat in der Nähe gefunden.\n\nGehen Sie zum Heizkörper und drücken Sie die Taste am Thermostat, um es aufzuwecken, stellen Sie sicher, dass ein Bluetooth-Adapter oder Proxy in Reichweite ist, und wählen Sie dann Erneut suchen. Die manuelle Eingabe wird nur benötigt, wenn das Gerät nicht erkannt werden kann.",
+        "menu_options": {
+          "rescan": "🔍 Erneut suchen",
+          "manual": "✏️ Manuell hinzufügen (erweitert)"
+        }
       }
     },
     "error": {

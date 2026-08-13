@@ -46,6 +46,14 @@
           "secret_key": "Sekretny klucz (32 znaki hex)",
           "pin": "PIN (0 = brak)"
         }
+      },
+      "no_devices": {
+        "title": "Nie wykryto termostatu",
+        "description": "Nie znaleziono jeszcze termostatu Danfoss Eco w pobliżu.\n\nPodejdź do grzejnika i naciśnij przycisk na termostacie, aby go wybudzić, upewnij się, że adapter lub proxy Bluetooth jest w zasięgu, a następnie wybierz Szukaj ponownie. Ręczne dodawanie jest potrzebne tylko, gdy urządzenia nie da się wykryć.",
+        "menu_options": {
+          "rescan": "🔍 Szukaj ponownie",
+          "manual": "✏️ Dodaj ręcznie (zaawansowane)"
+        }
       }
     },
     "error": {

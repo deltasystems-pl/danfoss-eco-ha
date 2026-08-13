@@ -46,6 +46,14 @@
           "secret_key": "Secret key (32 hex characters)",
           "pin": "PIN (0 = none)"
         }
+      },
+      "no_devices": {
+        "title": "No thermostat detected",
+        "description": "No Danfoss Eco thermostat was found nearby yet.\n\nWalk to the radiator and press the button on the thermostat to wake it, make sure a Bluetooth adapter or proxy is in range, then choose Search again. Manual entry is only needed if the device can't be detected.",
+        "menu_options": {
+          "rescan": "🔍 Search again",
+          "manual": "✏️ Add manually (advanced)"
+        }
       }
     },
     "error": {

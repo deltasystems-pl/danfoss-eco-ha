@@ -103,15 +103,25 @@ class DanfossEcoConfigFlow(ConfigFlow, domain=DOMAIN):
         }
         current = {e.unique_id for e in self._async_current_entries()}
         candidates = {a: n for a, n in candidates.items() if a not in current}
-        # No device advertising right now? Go straight to manual MAC + key entry.
+        # No thermostat detected yet: keep the guided (button-press) wizard as the
+        # primary path - offer to search again after waking the device - and keep
+        # manual address/key entry only as an advanced fallback.
         if not candidates:
-            return await self.async_step_manual()
-        # Always allow manual entry as an explicit option too.
-        candidates[MANUAL_ENTRY] = "✏️  Enter address and key manually"
+            return self.async_show_menu(
+                step_id="no_devices", menu_options=["rescan", "manual"]
+            )
+        # Devices found: pick one to pair. Manual entry stays as an extra option.
+        candidates[MANUAL_ENTRY] = "✏️  Enter address and key manually (advanced)"
         return self.async_show_form(
             step_id="user",
             data_schema=vol.Schema({vol.Required("device"): vol.In(candidates)}),
         )
+
+    async def async_step_rescan(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
+        """Re-run discovery (after the user woke the thermostat)."""
+        return await self.async_step_user()
 
     async def async_step_manual(
         self, user_input: dict[str, Any] | None = None
