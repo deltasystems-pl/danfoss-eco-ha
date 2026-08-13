@@ -66,6 +66,14 @@ SENSORS: tuple[EtrvSensorDescription, ...] = (
         entity_category=EntityCategory.DIAGNOSTIC,
         value_fn=lambda s: s.last_poll,
     ),
+    EtrvSensorDescription(
+        key="schedule",
+        translation_key="schedule",
+        entity_category=EntityCategory.DIAGNOSTIC,
+        value_fn=lambda s: (
+            "programmed" if s.schedule and any(s.schedule.days) else "not set"
+        ),
+    ),
 )
 
 
@@ -99,6 +107,11 @@ class EtrvSensor(CoordinatorEntity[EtrvCoordinator], SensorEntity):
 
     @property
     def extra_state_attributes(self) -> dict | None:
-        if self.entity_description.key == "rssi" and self.coordinator.data:
-            return {"source": self.coordinator.data.source}
+        data = self.coordinator.data
+        if data is None:
+            return None
+        if self.entity_description.key == "rssi":
+            return {"source": data.source}
+        if self.entity_description.key == "schedule" and data.schedule:
+            return data.schedule.as_attributes()
         return None

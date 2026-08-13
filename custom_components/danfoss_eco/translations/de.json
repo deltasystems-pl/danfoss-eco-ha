@@ -29,13 +29,23 @@
           "pair": "Automatisch koppeln (Taste am Thermostat drücken)",
           "manual_key": "Geheimschlüssel manuell eingeben"
         }
+      },
+      "manual": {
+        "title": "Thermostat manuell hinzufügen",
+        "description": "Geben Sie die Bluetooth-Adresse des Thermostats und seinen 32-stelligen Geheimschlüssel ein. Für ein Gerät, das gerade nicht sendet, oder um einen Schlüssel aus etrv2mqtt / libetrv zu verwenden.",
+        "data": {
+          "address": "Bluetooth-Adresse (AA:BB:CC:DD:EE:FF)",
+          "secret_key": "Geheimschlüssel (32 Hex-Zeichen)",
+          "pin": "PIN (0 = keine)"
+        }
       }
     },
     "error": {
       "button_not_pressed": "Das Kopplungsfenster war nicht offen. Drücken Sie kurz die Timer-Taste und klicken Sie sofort erneut auf Senden.",
       "not_in_range": "Das Thermostat wird von keinem Bluetooth-Adapter/Proxy gesehen. Proxy näher platzieren oder Batterien prüfen.",
       "cannot_connect": "Verbindung zum Thermostat fehlgeschlagen. Reichweite prüfen und erneut versuchen.",
-      "invalid_key": "Der Schlüssel muss genau 32 Hexadezimalzeichen haben."
+      "invalid_key": "Der Schlüssel muss genau 32 Hexadezimalzeichen haben.",
+      "invalid_address": "Die Bluetooth-Adresse muss wie AA:BB:CC:DD:EE:FF aussehen."
     },
     "abort": {
       "already_configured": "Dieses Thermostat ist bereits konfiguriert.",
@@ -64,6 +74,9 @@
       },
       "last_poll": {
         "name": "Letzte Abfrage"
+      },
+      "schedule": {
+        "name": "Wochenplan"
       }
     },
     "binary_sensor": {
@@ -108,6 +121,12 @@
       },
       "vacation_temperature": {
         "name": "Urlaubstemperatur"
+      },
+      "home_temperature": {
+        "name": "Komforttemperatur (zu Hause)"
+      },
+      "away_temperature": {
+        "name": "Absenktemperatur (Schlaf / abwesend)"
       }
     }
   },
@@ -141,6 +160,28 @@
         "end": {
           "name": "Ende",
           "description": "Enddatum/-zeit."
+        }
+      }
+    },
+    "set_schedule": {
+      "name": "Wochenplan festlegen",
+      "description": "Schreibt Komfort-/Absenktemperatur und/oder das Wochenprogramm auf das Gerät.",
+      "fields": {
+        "device_id": {
+          "name": "Gerät",
+          "description": "Das Danfoss Eco Gerät."
+        },
+        "home_temperature": {
+          "name": "Komforttemperatur",
+          "description": "Temperatur zu Hause (°C)."
+        },
+        "away_temperature": {
+          "name": "Absenktemperatur",
+          "description": "Temperatur bei Abwesenheit/Schlaf (°C)."
+        },
+        "days": {
+          "name": "Tage",
+          "description": "7 Listen (Mo..So) mit 'HH:MM'-Umschaltzeiten; vor der ersten Zeit ist das Gerät im Absenkbetrieb."
         }
       }
     }

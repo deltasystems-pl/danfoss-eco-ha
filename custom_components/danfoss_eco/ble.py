@@ -137,6 +137,30 @@ class EtrvClient:
             finally:
                 await client.disconnect()
 
+    async def read_schedule(self) -> tuple[bytes, bytes, bytes]:
+        """Read the three decrypted schedule characteristics (20/12/12 bytes)."""
+        async with self._lock:
+            client = await self._connect()
+            try:
+                return (
+                    await self._read(client, UUID_SCHEDULE_1),
+                    await self._read(client, UUID_SCHEDULE_2),
+                    await self._read(client, UUID_SCHEDULE_3),
+                )
+            finally:
+                await client.disconnect()
+
+    async def write_schedule(self, part_d: bytes, part_e: bytes, part_f: bytes) -> None:
+        """Write the three schedule characteristics (plaintext in; encrypted out)."""
+        async with self._lock:
+            client = await self._connect()
+            try:
+                await self._write(client, UUID_SCHEDULE_1, part_d)
+                await self._write(client, UUID_SCHEDULE_2, part_e)
+                await self._write(client, UUID_SCHEDULE_3, part_f)
+            finally:
+                await client.disconnect()
+
     async def write_char(self, uuid: str, payload: bytes) -> None:
         async with self._lock:
             client = await self._connect()

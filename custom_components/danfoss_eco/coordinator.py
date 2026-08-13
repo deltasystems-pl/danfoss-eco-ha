@@ -27,7 +27,7 @@ from .const import (
     UUID_TEMPERATURE,
     DeviceMode,
 )
-from .protocol import DeviceTime, Errors, Settings, Temperature
+from .protocol import DeviceTime, Errors, Schedule, Settings, Temperature
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -47,6 +47,7 @@ class EtrvState:
     last_poll: object  # datetime
     rssi: int | None
     source: str | None
+    schedule: Schedule | None = None
 
 
 class EtrvCoordinator(DataUpdateCoordinator[EtrvState]):
@@ -94,6 +95,12 @@ class EtrvCoordinator(DataUpdateCoordinator[EtrvState]):
         if info:
             state.rssi = info.rssi
             state.source = info.source
+
+        try:
+            parts = await self.client.read_schedule()
+            state.schedule = Schedule.parse(*parts)
+        except EtrvError as err:
+            _LOGGER.debug("%s: schedule read failed: %s", self.address, err)
 
         if self._auto_time_sync and (
             state.errors.flags.get("e10_invalid_time")
@@ -163,6 +170,25 @@ class EtrvCoordinator(DataUpdateCoordinator[EtrvState]):
         )
         self.data.settings.config_bits = bits
         self.async_update_listeners()
+        await self.async_request_refresh()
+
+    async def async_set_schedule_temps(
+        self, home: float | None = None, away: float | None = None
+    ) -> None:
+        """Update the comfort (home) and/or setback (away) schedule temperatures."""
+        if self.data is None or self.data.schedule is None:
+            raise UpdateFailed("No schedule loaded yet")
+        sched = self.data.schedule
+        if home is not None:
+            sched.home_temperature = home
+        if away is not None:
+            sched.away_temperature = away
+        await self.client.write_schedule(*sched.pack())
+        await self.async_request_refresh()
+
+    async def async_set_schedule(self, schedule: Schedule) -> None:
+        """Write a full weekly schedule."""
+        await self.client.write_schedule(*schedule.pack())
         await self.async_request_refresh()
 
     async def sync_time(self) -> None:

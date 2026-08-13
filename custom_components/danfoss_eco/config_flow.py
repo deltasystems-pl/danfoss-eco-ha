@@ -18,6 +18,8 @@ from homeassistant.config_entries import (
 from homeassistant.core import callback
 
 from .ble import EtrvButtonNotPressed, EtrvClient, EtrvError, EtrvNotFoundError
+from homeassistant.const import CONF_ADDRESS
+
 from .const import (
     CONF_AUTO_TIME_SYNC,
     CONF_PIN,
@@ -32,7 +34,9 @@ from .const import (
 
 _LOGGER = logging.getLogger(__name__)
 
+MANUAL_ENTRY = "__manual__"
 _KEY_RE = re.compile(r"^[0-9a-fA-F]{32}$")
+_MAC_RE = re.compile(r"^([0-9A-F]{2}:){5}[0-9A-F]{2}$")
 
 
 def _is_etrv(info: BluetoothServiceInfoBleak) -> bool:
@@ -84,7 +88,10 @@ class DanfossEcoConfigFlow(ConfigFlow, domain=DOMAIN):
         self, user_input: dict[str, Any] | None = None
     ) -> ConfigFlowResult:
         if user_input is not None:
-            self._address = user_input["device"]
+            choice = user_input["device"]
+            if choice == MANUAL_ENTRY:
+                return await self.async_step_manual()
+            self._address = choice
             await self.async_set_unique_id(self._address, raise_on_progress=False)
             self._abort_if_unique_id_configured()
             return await self.async_step_pair_menu()
@@ -96,11 +103,56 @@ class DanfossEcoConfigFlow(ConfigFlow, domain=DOMAIN):
         }
         current = {e.unique_id for e in self._async_current_entries()}
         candidates = {a: n for a, n in candidates.items() if a not in current}
+        # No device advertising right now? Go straight to manual MAC + key entry.
         if not candidates:
-            return self.async_abort(reason="no_devices_found")
+            return await self.async_step_manual()
+        # Always allow manual entry as an explicit option too.
+        candidates[MANUAL_ENTRY] = "✏️  Enter address and key manually"
         return self.async_show_form(
             step_id="user",
             data_schema=vol.Schema({vol.Required("device"): vol.In(candidates)}),
+        )
+
+    async def async_step_manual(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
+        """Add a thermostat by typing its MAC address and secret key.
+
+        For devices that aren't advertising right now, or when migrating a key
+        from etrv2mqtt / libetrv without touching the thermostat.
+        """
+        errors: dict[str, str] = {}
+        if user_input is not None:
+            address = user_input[CONF_ADDRESS].strip().upper()
+            key = user_input[CONF_SECRET_KEY].strip().lower()
+            if not _MAC_RE.match(address):
+                errors[CONF_ADDRESS] = "invalid_address"
+            elif not _KEY_RE.match(key):
+                errors[CONF_SECRET_KEY] = "invalid_key"
+            else:
+                await self.async_set_unique_id(address, raise_on_progress=False)
+                self._abort_if_unique_id_configured()
+                pin = int(user_input.get(CONF_PIN) or 0)
+                return self.async_create_entry(
+                    title=f"Danfoss Eco {address[-5:]}",
+                    data={
+                        "address": address,
+                        CONF_SECRET_KEY: key,
+                        CONF_PIN: pin,
+                    },
+                )
+        return self.async_show_form(
+            step_id="manual",
+            data_schema=vol.Schema(
+                {
+                    vol.Required(CONF_ADDRESS, default=self._address or ""): str,
+                    vol.Required(CONF_SECRET_KEY): str,
+                    vol.Optional(CONF_PIN, default=0): vol.All(
+                        vol.Coerce(int), vol.Range(min=0, max=9999)
+                    ),
+                }
+            ),
+            errors=errors,
         )
 
     # -- the pairing wizard step -------------------------------------------

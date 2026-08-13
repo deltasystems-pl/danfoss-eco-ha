@@ -182,6 +182,7 @@ The main thermostat.
 | `sensor.<name>_room_temperature` | Same value as the climate current temperature, as its own sensor for history/automations. |
 | `sensor.<name>_bluetooth_signal` | RSSI in dBm. Its `source` attribute tells you **which adapter/proxy** currently hears the device — handy for placing proxies. |
 | `sensor.<name>_last_poll` | Timestamp of the last successful full read. If this stops advancing, connections are failing. |
+| `sensor.<name>_weekly_schedule` | `programmed` / `not set`. Its attributes list the on-device weekly program per day in plain language (e.g. `mon: 00:00-07:00 away, 07:00-22:00 home, 22:00-24:00 away`). |
 
 ### Binary sensor (diagnostic)
 
@@ -214,6 +215,13 @@ the device's settings block.
 | `number.<name>_maximum_setpoint` | Max temperature | 15–28 °C |
 | `number.<name>_frost_protection_temperature` | Ochrona przeciwzamrożeniowa / frost protection | 4–10 °C |
 | `number.<name>_vacation_temperature` | Vacation temperature | 4–28 °C |
+| `number.<name>_comfort_home_temperature` | Comfort (home) schedule temperature | 4–28 °C |
+| `number.<name>_setback_sleep_away_temperature` | Setback (sleep/away) schedule temperature | 4–28 °C |
+
+The last two are the two temperatures the device's **weekly schedule** switches between:
+comfort when the program says you're home, setback when it says you're away or asleep.
+Together with the manual setpoint and the vacation temperature, these give the same
+four-temperature model as the Danfoss app.
 
 ### Button (configuration)
 
@@ -264,6 +272,37 @@ data:
   start: 2026-12-24 00:00:00
   end: 2027-01-02 00:00:00
 ```
+
+### `danfoss_eco.set_schedule`
+
+Writes the comfort/setback temperatures and/or the on-device weekly program, so the
+thermostat can run **autonomously** (switch `climate` to `auto`/schedule mode to use it).
+
+`days` is a list of **7 lists** (Monday → Sunday). Each inner list holds the
+`HH:MM` **transition times** for that day; minutes snap to `:00`/`:30`. The device
+starts each day in **setback (away)**, and every transition flips home↔away. So
+`['07:00','22:00']` means away 00:00–07:00, home 07:00–22:00, away 22:00–24:00.
+An empty list `[]` = setback all day. Up to 6 transitions per day.
+
+```yaml
+action: danfoss_eco.set_schedule
+data:
+  device_id: 1234567890abcdef
+  home_temperature: 22
+  away_temperature: 18
+  days:
+    - ["07:00", "22:00"]   # Mon
+    - ["07:00", "22:00"]   # Tue
+    - ["07:00", "22:00"]   # Wed
+    - ["07:00", "22:00"]   # Thu
+    - ["07:00", "23:00"]   # Fri
+    - ["08:00", "23:00"]   # Sat
+    - ["08:00", "22:00"]   # Sun
+```
+
+You can also set just the two temperatures via the
+`number.<name>_comfort_home_temperature` / `..._setback_sleep_away_temperature`
+entities without touching the day program.
 
 ---
 
@@ -418,6 +457,30 @@ time, bit 13 = E14 low battery, bit 14 = E15 very low battery.
 Two big-endian int32: local epoch seconds, then the UTC offset in seconds. The device
 stores local time; the integration writes `epoch + offset` and the offset so the device
 knows both.
+
+### Schedule payload (44 bytes, decrypted — **newly documented here**)
+
+Prior projects (libetrv, etrv2mqtt, esphome-danfoss-eco) left the schedule
+unimplemented. This layout was reverse-engineered against real Eco 2 hardware and is
+round-trip tested. The 44-byte struct is split across three encrypted characteristics:
+
+| UUID suffix | Bytes | Contents |
+|---|---|---|
+| `1002000d` | 20 | `home_temp` (×2), `away_temp` (×2), then days 0–2 |
+| `1002000e` | 12 | days 3–4 |
+| `1002000f` | 12 | days 5–6 |
+
+Each **day** is 6 bytes: up to six *transition marks* in **half-hour units** (0…48,
+where 14 = 07:00, 44 = 22:00; trailing `0x00` = unused). Day 0 is **Monday**. The day
+begins in **setback (away)**; each mark toggles home↔away. Concatenate the three
+decrypted characteristics to get the full struct; to write, re-split 20/12/12 and
+encrypt each part independently.
+
+Example (a real device, comfort 23 °C / setback 21 °C, home 07:00–22:00 every day):
+
+```
+2e 2a | 0e2c000000 00 | … (7×)      # 0x2e=46→23.0, 0x2a=42→21.0, 0x0e=14→07:00, 0x2c=44→22:00
+```
 
 ---
 
@@ -607,9 +670,11 @@ logger:
 **Can I use the phone app and HA at the same time?** Yes, though only one BLE client can
 be connected at a given instant — they take turns, they don't conflict.
 
-**Does it support the on-device weekly schedule?** Mode switching (manual/schedule/vacation)
-is supported now. Editing the on-device weekly program from HA is planned; meanwhile HA's
-own scheduling/automations are more flexible and work today.
+**Does it support the on-device weekly schedule?** Yes — read it (the *Weekly schedule*
+sensor's attributes) and write it (the `danfoss_eco.set_schedule` service, plus the
+comfort/setback temperature numbers). Switch the climate entity to `auto` to run the
+device's program. HA's own scheduling/automations remain available and are more flexible
+if you prefer to drive heating from Home Assistant instead.
 
 **How often does it poll?** Every 15 minutes by default; configurable.
 

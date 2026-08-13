@@ -29,13 +29,23 @@
           "pair": "Par automatisk (tryk på knappen på termostaten)",
           "manual_key": "Indtast den hemmelige nøgle manuelt"
         }
+      },
+      "manual": {
+        "title": "Tilføj termostat manuelt",
+        "description": "Indtast termostatens Bluetooth-adresse og dens 32-tegns hemmelige nøgle. Brug dette til en enhed, der ikke sender lige nu, eller til at genbruge en nøgle fra etrv2mqtt / libetrv.",
+        "data": {
+          "address": "Bluetooth-adresse (AA:BB:CC:DD:EE:FF)",
+          "secret_key": "Hemmelig nøgle (32 hex-tegn)",
+          "pin": "PIN (0 = ingen)"
+        }
       }
     },
     "error": {
       "button_not_pressed": "Parringsvinduet var ikke åbent. Tryk kort på timer-knappen og klik straks på Send igen.",
       "not_in_range": "Termostaten ses ikke af nogen Bluetooth-adapter/proxy. Flyt en proxy tættere på eller tjek batterierne.",
       "cannot_connect": "Kunne ikke oprette forbindelse til termostaten. Kontrollér rækkevidden og prøv igen.",
-      "invalid_key": "Nøglen skal være præcis 32 hexadecimale tegn."
+      "invalid_key": "Nøglen skal være præcis 32 hexadecimale tegn.",
+      "invalid_address": "Bluetooth-adressen skal se ud som AA:BB:CC:DD:EE:FF."
     },
     "abort": {
       "already_configured": "Denne termostat er allerede konfigureret.",
@@ -64,6 +74,9 @@
       },
       "last_poll": {
         "name": "Seneste aflæsning"
+      },
+      "schedule": {
+        "name": "Ugeskema"
       }
     },
     "binary_sensor": {
@@ -108,6 +121,12 @@
       },
       "vacation_temperature": {
         "name": "Ferietemperatur"
+      },
+      "home_temperature": {
+        "name": "Komforttemperatur (hjemme)"
+      },
+      "away_temperature": {
+        "name": "Sænkningstemperatur (søvn / ude)"
       }
     }
   },
@@ -141,6 +160,28 @@
         "end": {
           "name": "Slut",
           "description": "Slutdato/-tid."
+        }
+      }
+    },
+    "set_schedule": {
+      "name": "Indstil ugeskema",
+      "description": "Skriver komfort-/sænkningstemperatur og/eller ugeprogrammet til enheden.",
+      "fields": {
+        "device_id": {
+          "name": "Enhed",
+          "description": "Danfoss Eco enheden."
+        },
+        "home_temperature": {
+          "name": "Komforttemperatur",
+          "description": "Temperatur når hjemme (°C)."
+        },
+        "away_temperature": {
+          "name": "Sænkningstemperatur",
+          "description": "Temperatur når ude/sover (°C)."
+        },
+        "days": {
+          "name": "Dage",
+          "description": "7 lister (man..søn) med 'HH:MM'-skiftetider; før den første tid er enheden i sænkning."
         }
       }
     }

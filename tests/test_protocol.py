@@ -29,7 +29,12 @@ pkg.__path__ = [_DIR]
 sys.modules["danfoss_eco"] = pkg
 
 from danfoss_eco.crypto import etrv_decode, etrv_encode  # noqa: E402
-from danfoss_eco.protocol import Errors, Settings, Temperature  # noqa: E402
+from danfoss_eco.protocol import Errors, Schedule, Settings, Temperature  # noqa: E402
+
+# TV (00:04:2F:80:BB:16) schedule, decoded bytes captured from real hardware
+SCHED_D = bytes.fromhex("2e2a0e2c000000000e2c000000000e2c00000000")  # 20B
+SCHED_E = bytes.fromhex("0e2c000000000e2c00000000")  # 12B
+SCHED_F = bytes.fromhex("0e2c000000000e2c00000000")  # 12B
 
 # Jadalnia (00:04:2F:DE:65:8E), key + raw payloads logged by the ESP component
 KEY = bytes.fromhex("8d3abffbb017d3537727efe5ee53aee7")
@@ -85,6 +90,37 @@ def test_config_bit_toggle():
     s2 = Settings.parse(s.pack(config_bits=bits))
     assert s2.child_lock is False
     assert s2.adaptable_regulation is True  # others intact
+
+
+def test_schedule_parse():
+    s = Schedule.parse(SCHED_D, SCHED_E, SCHED_F)
+    assert s.home_temperature == 23.0, s.home_temperature
+    assert s.away_temperature == 21.0, s.away_temperature
+    assert len(s.days) == 7
+    # every day: transitions at 07:00 (mark 14) and 22:00 (mark 44)
+    for d in range(7):
+        assert s.days[d] == [14, 44], (d, s.days[d])
+    intervals = s.day_intervals(0)
+    assert intervals == [
+        ("00:00", "07:00", False),
+        ("07:00", "22:00", True),
+        ("22:00", "24:00", False),
+    ], intervals
+
+
+def test_schedule_pack_roundtrip():
+    s = Schedule.parse(SCHED_D, SCHED_E, SCHED_F)
+    d, e, f = s.pack()
+    assert d == SCHED_D, d.hex()
+    assert e == SCHED_E, e.hex()
+    assert f == SCHED_F, f.hex()
+    # modify and re-parse
+    s.home_temperature = 22.5
+    s.days[2] = [12, 40]  # Wed: 06:00-20:00 home
+    s2 = Schedule.parse(*s.pack())
+    assert s2.home_temperature == 22.5
+    assert s2.days[2] == [12, 40]
+    assert s2.days[0] == [14, 44]
 
 
 if __name__ == "__main__":

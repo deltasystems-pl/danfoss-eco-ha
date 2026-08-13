@@ -168,3 +168,82 @@ class DeviceTime:
 def parse_name(data: bytes) -> str:
     """Device name characteristic (decrypted, NUL-padded)."""
     return data.split(b"\0", 1)[0].decode("utf-8", errors="replace").strip()
+
+
+# Schedule characteristic layout (verified against real hardware, 2026-08).
+# The device stores a weekly program as a 44-byte struct, split across three
+# encrypted characteristics:
+#   0x0D (20B): home_temp, away_temp, then days 0..2 (6 bytes each)
+#   0x0E (12B): days 3..4
+#   0x0F (12B): days 5..6
+# Each day is up to 6 "transition marks" in half-hour units (0..48; 0 = unused
+# tail). The interval before the first mark is AWAY; each mark toggles
+# home<->away. So [14, 44] = away 00:00-07:00, home 07:00-22:00, away 22:00-24:00.
+SLOTS_PER_DAY = 6
+DAYS = 7
+# Day 0 = Monday (the Danfoss app is Monday-first in the EU).
+WEEKDAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
+
+
+@dataclass
+class Schedule:
+    home_temperature: float
+    away_temperature: float
+    days: list[list[int]]  # 7 lists of transition marks (half-hour units, 0..48)
+
+    @classmethod
+    def parse(cls, part_d: bytes, part_e: bytes, part_f: bytes) -> "Schedule":
+        raw = bytes(part_d) + bytes(part_e) + bytes(part_f)  # 44 bytes
+        home = _to_temp(raw[0])
+        away = _to_temp(raw[1])
+        days: list[list[int]] = []
+        body = raw[2 : 2 + DAYS * SLOTS_PER_DAY]
+        for d in range(DAYS):
+            chunk = body[d * SLOTS_PER_DAY : (d + 1) * SLOTS_PER_DAY]
+            marks = [b for b in chunk if 0 < b <= 48]
+            days.append(marks)
+        return cls(home_temperature=home, away_temperature=away, days=days)
+
+    def pack(self) -> tuple[bytes, bytes, bytes]:
+        buf = bytearray(2 + DAYS * SLOTS_PER_DAY)
+        buf[0] = _from_temp(self.home_temperature)
+        buf[1] = _from_temp(self.away_temperature)
+        for d in range(DAYS):
+            marks = sorted(m for m in self.days[d] if 0 < m <= 48)[:SLOTS_PER_DAY]
+            for i, m in enumerate(marks):
+                buf[2 + d * SLOTS_PER_DAY + i] = m
+        raw = bytes(buf)
+        return raw[0:20], raw[20:32], raw[32:44]
+
+    def day_intervals(self, day: int) -> list[tuple[str, str, bool]]:
+        """Return [(start 'HH:MM', end 'HH:MM', is_home), ...] for one day."""
+        marks = sorted(m for m in self.days[day] if 0 < m <= 48)
+        bounds = [0, *marks, 48]
+        out: list[tuple[str, str, bool]] = []
+        is_home = False  # before the first mark the device is in setback (away)
+        for i in range(len(bounds) - 1):
+            start, end = bounds[i], bounds[i + 1]
+            if start == end:
+                is_home = not is_home
+                continue
+            out.append((_hhmm(start), _hhmm(end), is_home))
+            is_home = not is_home
+        return out
+
+    def as_attributes(self) -> dict[str, str]:
+        attrs = {
+            "home_temperature": self.home_temperature,
+            "away_temperature": self.away_temperature,
+        }
+        for d in range(DAYS):
+            parts = [
+                f"{s}-{e} {'home' if h else 'away'}"
+                for s, e, h in self.day_intervals(d)
+            ]
+            attrs[WEEKDAYS[d].lower()] = ", ".join(parts) or "away all day"
+        return attrs
+
+
+def _hhmm(half_hours: int) -> str:
+    h, m = divmod(half_hours * 30, 60)
+    return f"{h:02d}:{m:02d}"

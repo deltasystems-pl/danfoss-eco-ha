@@ -29,13 +29,23 @@
           "pair": "Paruj automatycznie (naciśnij przycisk na termostacie)",
           "manual_key": "Wprowadź sekretny klucz ręcznie"
         }
+      },
+      "manual": {
+        "title": "Dodaj termostat ręcznie",
+        "description": "Wprowadź adres Bluetooth termostatu oraz jego 32-znakowy sekretny klucz. Użyj tego dla urządzenia, które teraz nie rozgłasza, lub aby użyć klucza z etrv2mqtt / libetrv.",
+        "data": {
+          "address": "Adres Bluetooth (AA:BB:CC:DD:EE:FF)",
+          "secret_key": "Sekretny klucz (32 znaki hex)",
+          "pin": "PIN (0 = brak)"
+        }
       }
     },
     "error": {
       "button_not_pressed": "Okno parowania nie było otwarte. Krótko naciśnij przycisk zegara na termostacie i natychmiast kliknij Zatwierdź ponownie.",
       "not_in_range": "Termostat nie jest widoczny przez żaden adapter/proxy Bluetooth. Przybliż proxy lub sprawdź baterie.",
       "cannot_connect": "Nie udało się połączyć z termostatem. Upewnij się, że jest w zasięgu i spróbuj ponownie.",
-      "invalid_key": "Klucz musi mieć dokładnie 32 znaki szesnastkowe."
+      "invalid_key": "Klucz musi mieć dokładnie 32 znaki szesnastkowe.",
+      "invalid_address": "Adres Bluetooth musi mieć postać AA:BB:CC:DD:EE:FF."
     },
     "abort": {
       "already_configured": "Ten termostat jest już skonfigurowany.",
@@ -64,6 +74,9 @@
       },
       "last_poll": {
         "name": "Ostatni odczyt"
+      },
+      "schedule": {
+        "name": "Harmonogram tygodniowy"
       }
     },
     "binary_sensor": {
@@ -108,6 +121,12 @@
       },
       "vacation_temperature": {
         "name": "Temperatura wakacyjna"
+      },
+      "home_temperature": {
+        "name": "Temperatura komfortowa (w domu)"
+      },
+      "away_temperature": {
+        "name": "Temperatura obniżona (sen / poza domem)"
       }
     }
   },
@@ -141,6 +160,28 @@
         "end": {
           "name": "Koniec",
           "description": "Data/godzina zakończenia."
+        }
+      }
+    },
+    "set_schedule": {
+      "name": "Ustaw harmonogram tygodniowy",
+      "description": "Zapisuje temperatury komfortową/obniżoną i/lub program tygodniowy w urządzeniu.",
+      "fields": {
+        "device_id": {
+          "name": "Urządzenie",
+          "description": "Termostat Danfoss Eco."
+        },
+        "home_temperature": {
+          "name": "Temperatura komfortowa",
+          "description": "Temperatura gdy w domu (°C)."
+        },
+        "away_temperature": {
+          "name": "Temperatura obniżona",
+          "description": "Temperatura poza domem/podczas snu (°C)."
+        },
+        "days": {
+          "name": "Dni",
+          "description": "7 list (pon..niedz) czasów 'HH:MM'; przed pierwszym czasem dnia urządzenie jest w trybie obniżonym."
         }
       }
     }

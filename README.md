@@ -27,6 +27,10 @@ addresses, no hex keys and no command-line tools.
 - 🎛️ **All the app's expert settings** — min/max temperature, frost protection,
   vacation temperature, adaptive regulation, slow regulation, display flip, mounting
   orientation, montage mode and **button (child) lock**, as native number/switch entities
+- 📅 **Weekly schedule** — read and write the on-device program (comfort/setback
+  temperatures + per-day time slots) so the thermostat runs autonomously; exposed as a
+  human-readable sensor and the `danfoss_eco.set_schedule` service
+- ➕ **Add manually** — attach a thermostat by MAC + key even when it isn't advertising
 - 🕐 **Automatic time sync** — the device clock is corrected whenever it drifts or
   flags `E10 INVALID TIME` (e.g. after a battery swap); manual *Sync time* button
   and `danfoss_eco.sync_time` service included

@@ -29,13 +29,23 @@
           "pair": "Pair automatically (press the button on the thermostat)",
           "manual_key": "Enter the secret key manually"
         }
+      },
+      "manual": {
+        "title": "Add a thermostat manually",
+        "description": "Enter the thermostat's Bluetooth address and its 32-character secret key. Use this for a device that isn't advertising right now, or to reuse a key from etrv2mqtt / libetrv.",
+        "data": {
+          "address": "Bluetooth address (AA:BB:CC:DD:EE:FF)",
+          "secret_key": "Secret key (32 hex characters)",
+          "pin": "PIN (0 = none)"
+        }
       }
     },
     "error": {
       "button_not_pressed": "The pairing window was not open. Short-press the timer button on the thermostat and click Submit again right away.",
       "not_in_range": "The thermostat is not seen by any Bluetooth adapter or proxy. Move a proxy closer or check the batteries.",
       "cannot_connect": "Could not connect to the thermostat. Make sure it is in range and try again.",
-      "invalid_key": "The key must be exactly 32 hexadecimal characters."
+      "invalid_key": "The key must be exactly 32 hexadecimal characters.",
+      "invalid_address": "The Bluetooth address must look like AA:BB:CC:DD:EE:FF."
     },
     "abort": {
       "already_configured": "This thermostat is already configured.",
@@ -64,6 +74,9 @@
       },
       "last_poll": {
         "name": "Last poll"
+      },
+      "schedule": {
+        "name": "Weekly schedule"
       }
     },
     "binary_sensor": {
@@ -108,6 +121,12 @@
       },
       "vacation_temperature": {
         "name": "Vacation temperature"
+      },
+      "home_temperature": {
+        "name": "Comfort (home) temperature"
+      },
+      "away_temperature": {
+        "name": "Setback (sleep / away) temperature"
       }
     }
   },
@@ -141,6 +160,28 @@
         "end": {
           "name": "End",
           "description": "Vacation end date/time."
+        }
+      }
+    },
+    "set_schedule": {
+      "name": "Set weekly schedule",
+      "description": "Writes the comfort/setback temperatures and/or the weekly program to the device.",
+      "fields": {
+        "device_id": {
+          "name": "Device",
+          "description": "The Danfoss Eco device."
+        },
+        "home_temperature": {
+          "name": "Comfort temperature",
+          "description": "Temperature when at home (°C)."
+        },
+        "away_temperature": {
+          "name": "Setback temperature",
+          "description": "Temperature when away/sleeping (°C)."
+        },
+        "days": {
+          "name": "Days",
+          "description": "7 lists (Mon..Sun) of 'HH:MM' transition times; before the first time each day the device is in setback."
         }
       }
     }

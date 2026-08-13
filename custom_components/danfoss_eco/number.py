@@ -24,8 +24,9 @@ from .coordinator import EtrvCoordinator, EtrvState
 
 @dataclass(frozen=True, kw_only=True)
 class EtrvNumberDescription(NumberEntityDescription):
-    value_fn: Callable[[EtrvState], float]
-    settings_field: str
+    value_fn: Callable[[EtrvState], float | None]
+    settings_field: str | None = None
+    schedule_temp: str | None = None  # "home" or "away"
 
 
 NUMBERS: tuple[EtrvNumberDescription, ...] = (
@@ -81,6 +82,30 @@ NUMBERS: tuple[EtrvNumberDescription, ...] = (
         value_fn=lambda s: s.settings.vacation_temperature,
         settings_field="vacation_temperature",
     ),
+    EtrvNumberDescription(
+        key="home_temperature",
+        translation_key="home_temperature",
+        native_min_value=4.0,
+        native_max_value=28.0,
+        native_step=0.5,
+        native_unit_of_measurement=UnitOfTemperature.CELSIUS,
+        device_class=NumberDeviceClass.TEMPERATURE,
+        mode=NumberMode.BOX,
+        value_fn=lambda s: s.schedule.home_temperature if s.schedule else None,
+        schedule_temp="home",
+    ),
+    EtrvNumberDescription(
+        key="away_temperature",
+        translation_key="away_temperature",
+        native_min_value=4.0,
+        native_max_value=28.0,
+        native_step=0.5,
+        native_unit_of_measurement=UnitOfTemperature.CELSIUS,
+        device_class=NumberDeviceClass.TEMPERATURE,
+        mode=NumberMode.BOX,
+        value_fn=lambda s: s.schedule.away_temperature if s.schedule else None,
+        schedule_temp="away",
+    ),
 )
 
 
@@ -113,6 +138,11 @@ class EtrvNumber(CoordinatorEntity[EtrvCoordinator], NumberEntity):
         return self.entity_description.value_fn(self.coordinator.data)
 
     async def async_set_native_value(self, value: float) -> None:
-        await self.coordinator.async_update_settings(
-            **{self.entity_description.settings_field: value}
-        )
+        if self.entity_description.schedule_temp == "home":
+            await self.coordinator.async_set_schedule_temps(home=value)
+        elif self.entity_description.schedule_temp == "away":
+            await self.coordinator.async_set_schedule_temps(away=value)
+        elif self.entity_description.settings_field:
+            await self.coordinator.async_update_settings(
+                **{self.entity_description.settings_field: value}
+            )

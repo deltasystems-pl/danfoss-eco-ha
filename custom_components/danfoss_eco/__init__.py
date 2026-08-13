@@ -31,6 +31,7 @@ CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
 
 SERVICE_SET_VACATION = "set_vacation"
 SERVICE_SYNC_TIME = "sync_time"
+SERVICE_SET_SCHEDULE = "set_schedule"
 
 _VACATION_SCHEMA = vol.Schema(
     {
@@ -40,6 +41,28 @@ _VACATION_SCHEMA = vol.Schema(
         vol.Required("end"): cv.datetime,
     }
 )
+
+_SCHEDULE_SCHEMA = vol.Schema(
+    {
+        vol.Required("device_id"): cv.string,
+        vol.Optional("home_temperature"): vol.All(
+            vol.Coerce(float), vol.Range(min=4, max=28)
+        ),
+        vol.Optional("away_temperature"): vol.All(
+            vol.Coerce(float), vol.Range(min=4, max=28)
+        ),
+        vol.Optional("days"): vol.All(
+            cv.ensure_list, [vol.All(cv.ensure_list, [cv.string])]
+        ),
+    }
+)
+
+
+def _hhmm_to_mark(value: str) -> int:
+    """'HH:MM' -> half-hour mark (0..48). Minutes snap to 0/30."""
+    h, _, m = str(value).partition(":")
+    mark = int(h) * 2 + (1 if int(m or 0) >= 30 else 0)
+    return max(0, min(48, mark))
 
 
 type DanfossEcoConfigEntry = ConfigEntry[EtrvCoordinator]
@@ -92,6 +115,29 @@ def _async_register_services(hass: HomeAssistant) -> None:
         await coordinator.async_set_vacation(
             call.data.get("temperature"), start, end
         )
+
+    async def _set_schedule(call: ServiceCall) -> None:
+        coordinator = _coordinator_for_device(hass, call.data["device_id"])
+        if coordinator.data is None or coordinator.data.schedule is None:
+            raise EtrvError("Schedule not loaded yet; try again after a poll")
+        sched = coordinator.data.schedule
+        if "home_temperature" in call.data:
+            sched.home_temperature = call.data["home_temperature"]
+        if "away_temperature" in call.data:
+            sched.away_temperature = call.data["away_temperature"]
+        days_in = call.data.get("days")
+        if days_in is not None:
+            # days: list of 7 lists of "HH:MM" transition strings (home starts
+            # after the first mark; before it the device is in setback/away)
+            for idx, marks in enumerate(days_in):
+                if idx >= 7:
+                    break
+                sched.days[idx] = sorted(_hhmm_to_mark(m) for m in marks)
+        await coordinator.async_set_schedule(sched)
+
+    hass.services.async_register(
+        DOMAIN, SERVICE_SET_SCHEDULE, _set_schedule, schema=_SCHEDULE_SCHEMA
+    )
 
     hass.services.async_register(
         DOMAIN,

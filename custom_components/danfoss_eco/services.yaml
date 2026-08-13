@@ -29,3 +29,32 @@ set_vacation:
       required: true
       selector:
         datetime:
+
+set_schedule:
+  fields:
+    device_id:
+      required: true
+      selector:
+        device:
+          integration: danfoss_eco
+    home_temperature:
+      required: false
+      selector:
+        number:
+          min: 4
+          max: 28
+          step: 0.5
+          unit_of_measurement: "°C"
+    away_temperature:
+      required: false
+      selector:
+        number:
+          min: 4
+          max: 28
+          step: 0.5
+          unit_of_measurement: "°C"
+    days:
+      required: false
+      example: "[['07:00','22:00'], ['07:00','22:00'], [], [], [], ['08:00','23:00'], ['08:00','23:00']]"
+      selector:
+        object:
