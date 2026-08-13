@@ -54,6 +54,8 @@ addresses, no hex keys and no command-line tools.
 guide covering every entity, option and service, how the device and protocol work, how
 to build a dashboard, Bluetooth-proxy placement, troubleshooting and an FAQ.
 
+Version history is in the **[CHANGELOG](CHANGELOG.md)**.
+
 ### A note on speed
 
 The Danfoss Eco has a reputation for being painfully slow over BLE (60–90 s

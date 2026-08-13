@@ -650,6 +650,44 @@ can hide the key characteristic) and retry.
 Usually range or a busy proxy. Move a proxy closer, or raise its `max_connections`.
 Check `sensor.<name>_bluetooth_signal`.
 
+**A device stays *unavailable* but still shows a min/max range.**
+Those cached values prove it *has* polled successfully before — the current poll is just
+failing (range or contention). It will recover on the next successful poll; press
+**Refresh now** to retry immediately.
+
+**One device is flaky / drops off while the others are fine.**
+That device is your weakest link (farthest from the proxy, or a thick wall in the way).
+The eTRV only advertises intermittently, so a weak one is reachable sometimes and not
+others. Fixes, in order: (1) **restart the thermostat** (short-press-reset or a battery
+out-and-in) to wake its radio; (2) add a **second Bluetooth proxy** closer to it — HA
+automatically routes each device to whichever proxy hears it best; (3) move the existing
+proxy. Watch `sensor.<name>_bluetooth_signal`; aim for better than −85 dBm.
+
+**Several devices go unavailable when I refresh them all at once.**
+Expected. Each Danfoss connection is slow and holds a proxy connection slot for its whole
+poll, so firing *N* refreshes simultaneously makes them fight over the proxy and some time
+out. Refresh **one at a time**, or just let the scheduled polls run — they are naturally
+staggered. If you have many devices on one proxy, raise `esp32_ble: max_connections` in the
+proxy firmware and/or add another proxy.
+
+**"not seen by any Bluetooth adapter/proxy" right after restarting Home Assistant.**
+Transient. After a restart (or after the proxy reboots) the Bluetooth stack needs a minute
+or two to re-register the proxy's *connectable* routes; the first poll in that window fails.
+It clears itself on the next poll. (If it persists for many minutes, the proxy connection to
+HA is the problem — see the proxy notes.)
+
+**"Refresh now" does something, but calling `homeassistant.update_entity` does nothing.**
+Correct — `homeassistant.update_entity` does **not** trigger a fresh device read for this
+integration (the entities are coordinator-backed and have no per-entity poll). To force an
+immediate read, use the **Refresh now** button, or reload the config entry.
+
+**Don't run the `esphome-danfoss-eco` ESPHome component on the same ESP as your proxy.**
+If you previously used the ESPHome `danfoss_eco` component, remove it once you switch to this
+integration. Its blocking BLE work can starve the ESP's main loop and take the whole
+ESPHome/Bluetooth-proxy connection offline. A device configured as an ESPHome `ble_client`
+is also *claimed* by that ESP and cannot be used by this integration at the same time. Use a
+plain `bluetooth_proxy` and let this integration do the BLE.
+
 **Writes seem ignored.**
 If you set a PIN in the Danfoss app, enter it in **Configure → Device PIN**. A wrong PIN
 lets reads through but can make writes silently fail.
@@ -697,6 +735,19 @@ is a good balance; alkaline AAs typically last a heating season or more.
 
 **Is my secret key safe?** It's stored in your Home Assistant config entry, like any other
 device credential, and never leaves your instance.
+
+**Why do I see the device with all entities "unavailable"?** Setup deliberately succeeds
+even if the first read fails (these devices are often briefly unreachable), so you always
+get the device page and a working **Refresh now** button. The entities populate on the first
+successful poll.
+
+**How many thermostats can one proxy handle?** A handful, but each poll is slow and holds a
+connection slot, so they should not all connect at once. For more than ~3 on one proxy,
+raise `esp32_ble: max_connections` and/or add a second proxy. HA balances devices across
+proxies automatically.
+
+**Do I need to keep the Danfoss app?** Only for things this integration doesn't expose yet
+(rare). Day-to-day control, the four temperatures, schedule and settings are all here.
 
 ---
 
