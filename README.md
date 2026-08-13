@@ -38,9 +38,15 @@ addresses, no hex keys and no command-line tools.
   and temperature; shows up as the *Away* preset
 - 📊 **Diagnostics** — battery, room temperature, Bluetooth signal (RSSI + which
   adapter/proxy hears the device), last-poll timestamp, and a *Problem* sensor that
-  decodes the device error flags (E9 valve, E10 time, E14/E15 battery)
+  decodes the device error flags (E9 valve, E10 time, E14/E15 battery); plus a
+  **downloadable diagnostics** snapshot (secret key & address redacted)
+- 🔄 **Refresh now** — a button to force an immediate read instead of waiting for
+  the next poll
+- ♻️ **Reconfigure** — update a device's secret key or PIN from the UI, no need to
+  delete and re-add it
 - 🔑 **Manual key entry** — optional path for migrating from etrv2mqtt / libetrv
-- 📡 **Works over ESPHome Bluetooth proxies** — no adapter on the HA host needed
+- 📡 **Works over ESPHome Bluetooth proxies** — no adapter on the HA host needed; HA
+  routes each connection to whichever proxy hears the device best
 
 ## 📖 Full documentation
 
