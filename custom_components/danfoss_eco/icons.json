@@ -3,30 +3,63 @@
     "switch": {
       "child_lock": {
         "default": "mdi:lock",
-        "state": { "off": "mdi:lock-open-variant" }
+        "state": {
+          "off": "mdi:lock-open-variant"
+        }
       },
-      "adaptable_regulation": { "default": "mdi:brain" },
-      "slow_regulation": { "default": "mdi:speedometer-slow" },
-      "display_flip": { "default": "mdi:phone-rotate-landscape" },
-      "vertical_installation": { "default": "mdi:swap-vertical" },
-      "valve_installed": { "default": "mdi:wrench" }
+      "adaptable_regulation": {
+        "default": "mdi:brain"
+      },
+      "slow_regulation": {
+        "default": "mdi:speedometer-slow"
+      },
+      "display_flip": {
+        "default": "mdi:phone-rotate-landscape"
+      },
+      "vertical_installation": {
+        "default": "mdi:swap-vertical"
+      },
+      "valve_installed": {
+        "default": "mdi:wrench"
+      }
     },
     "number": {
-      "temperature_min": { "default": "mdi:thermometer-low" },
-      "temperature_max": { "default": "mdi:thermometer-high" },
-      "frost_protection": { "default": "mdi:snowflake-thermometer" },
-      "vacation_temperature": { "default": "mdi:palm-tree" }
+      "temperature_min": {
+        "default": "mdi:thermometer-low"
+      },
+      "temperature_max": {
+        "default": "mdi:thermometer-high"
+      },
+      "frost_protection": {
+        "default": "mdi:snowflake-thermometer"
+      },
+      "vacation_temperature": {
+        "default": "mdi:palm-tree"
+      }
     },
     "button": {
-      "sync_time": { "default": "mdi:clock-check" }
+      "sync_time": {
+        "default": "mdi:clock-check"
+      },
+      "refresh": {
+        "default": "mdi:refresh"
+      }
     },
     "sensor": {
-      "rssi": { "default": "mdi:bluetooth-audio" },
-      "last_poll": { "default": "mdi:history" }
+      "rssi": {
+        "default": "mdi:bluetooth-audio"
+      },
+      "last_poll": {
+        "default": "mdi:history"
+      }
     }
   },
   "services": {
-    "sync_time": { "service": "mdi:clock-check" },
-    "set_vacation": { "service": "mdi:palm-tree" }
+    "sync_time": {
+      "service": "mdi:clock-check"
+    },
+    "set_vacation": {
+      "service": "mdi:palm-tree"
+    }
   }
 }

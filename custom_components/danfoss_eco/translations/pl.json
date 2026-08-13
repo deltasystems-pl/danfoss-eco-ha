@@ -96,6 +96,9 @@
     "button": {
       "sync_time": {
         "name": "Synchronizuj czas"
+      },
+      "refresh": {
+        "name": "Odśwież teraz"
       }
     },
     "switch": {

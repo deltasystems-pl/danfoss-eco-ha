@@ -22,20 +22,40 @@ async def async_setup_entry(
     entry: DanfossEcoConfigEntry,
     async_add_entities: AddEntitiesCallback,
 ) -> None:
-    async_add_entities([EtrvSyncTimeButton(entry.runtime_data)])
+    coordinator = entry.runtime_data
+    async_add_entities(
+        [EtrvSyncTimeButton(coordinator), EtrvRefreshButton(coordinator)]
+    )
 
 
-class EtrvSyncTimeButton(CoordinatorEntity[EtrvCoordinator], ButtonEntity):
+class _EtrvButton(CoordinatorEntity[EtrvCoordinator], ButtonEntity):
     _attr_has_entity_name = True
-    _attr_translation_key = "sync_time"
-    _attr_entity_category = EntityCategory.CONFIG
+    _key: str
 
     def __init__(self, coordinator: EtrvCoordinator) -> None:
         super().__init__(coordinator)
         mac = format_mac(coordinator.address)
-        self._attr_unique_id = f"{mac}_sync_time"
+        self._attr_unique_id = f"{mac}_{self._key}"
         self._attr_device_info = DeviceInfo(identifiers={(DOMAIN, mac)})
+
+
+class EtrvSyncTimeButton(_EtrvButton):
+    _key = "sync_time"
+    _attr_translation_key = "sync_time"
+    _attr_entity_category = EntityCategory.CONFIG
 
     async def async_press(self) -> None:
         await self.coordinator.sync_time()
         await self.coordinator.async_request_refresh()
+
+
+class EtrvRefreshButton(_EtrvButton):
+    """Force an immediate read of the thermostat (diagnostic)."""
+
+    _key = "refresh"
+    _attr_translation_key = "refresh"
+    _attr_entity_category = EntityCategory.DIAGNOSTIC
+    _attr_icon = "mdi:refresh"
+
+    async def async_press(self) -> None:
+        await self.coordinator.async_refresh()

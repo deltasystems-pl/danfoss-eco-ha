@@ -228,6 +228,7 @@ four-temperature model as the Danfoss app.
 | Entity | Meaning |
 |---|---|
 | `button.<name>_sync_time` | Manually writes the current local time to the device (see below). |
+| `button.<name>_refresh_now` | Forces an immediate read of the thermostat instead of waiting for the next poll — handy after a change, or to retry when a device has been out of range. |
 
 ---
 

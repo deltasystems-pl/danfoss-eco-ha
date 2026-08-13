@@ -96,6 +96,9 @@
     "button": {
       "sync_time": {
         "name": "Synkroniser tid"
+      },
+      "refresh": {
+        "name": "Opdater nu"
       }
     },
     "switch": {
