@@ -8,7 +8,6 @@ import voluptuous as vol
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant, ServiceCall
-from homeassistant.exceptions import ConfigEntryNotReady
 from homeassistant.helpers import config_validation as cv, device_registry as dr
 from homeassistant.util import dt as dt_util
 
@@ -70,11 +69,13 @@ type DanfossEcoConfigEntry = ConfigEntry[EtrvCoordinator]
 
 async def async_setup_entry(hass: HomeAssistant, entry: DanfossEcoConfigEntry) -> bool:
     coordinator = EtrvCoordinator(hass, entry)
-    try:
-        await coordinator.async_config_entry_first_refresh()
-    except Exception as err:  # noqa: BLE001
-        raise ConfigEntryNotReady(str(err)) from err
     entry.runtime_data = coordinator
+    # These are weak-signal, deep-sleeping BLE devices, so the first read may
+    # fail simply because the thermostat is momentarily unreachable. Don't block
+    # setup on it: create the entities (they show "unavailable" until a poll
+    # succeeds) so the user always has the device page and can hit "Refresh now"
+    # to retry. The coordinator keeps retrying on its normal interval too.
+    await coordinator.async_refresh()
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     entry.async_on_unload(entry.add_update_listener(_async_update_listener))
     _async_register_services(hass)

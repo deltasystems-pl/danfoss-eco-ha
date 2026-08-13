@@ -57,5 +57,11 @@ class EtrvRefreshButton(_EtrvButton):
     _attr_entity_category = EntityCategory.DIAGNOSTIC
     _attr_icon = "mdi:refresh"
 
+    @property
+    def available(self) -> bool:
+        # Must stay pressable even when polls are failing - that's exactly when
+        # the user wants to retry fetching data.
+        return True
+
     async def async_press(self) -> None:
         await self.coordinator.async_refresh()
