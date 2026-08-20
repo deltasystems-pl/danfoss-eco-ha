@@ -17,13 +17,14 @@
 8. [Options & configuration](#8-options--configuration)
 9. [Services](#9-services)
 10. [Automations & examples](#10-automations--examples)
-11. [How the integration works internally](#11-how-the-integration-works-internally)
-12. [The protocol, byte by byte](#12-the-protocol-byte-by-byte)
-13. [Bluetooth proxies & range](#13-bluetooth-proxies--range)
-14. [Building a dashboard](#14-building-a-dashboard)
-15. [Troubleshooting](#15-troubleshooting)
-16. [FAQ](#16-faq)
-17. [Credits, license & prior art](#17-credits-license--prior-art)
+11. [Offline behaviour: cached readings & queued commands](#11-offline-behaviour-cached-readings--queued-commands)
+12. [How the integration works internally](#12-how-the-integration-works-internally)
+13. [The protocol, byte by byte](#13-the-protocol-byte-by-byte)
+14. [Bluetooth proxies & range](#14-bluetooth-proxies--range)
+15. [Building a dashboard](#15-building-a-dashboard)
+16. [Troubleshooting](#16-troubleshooting)
+17. [FAQ](#17-faq)
+18. [Credits, license & prior art](#18-credits-license--prior-art)
 
 ---
 
@@ -181,7 +182,8 @@ The main thermostat.
 | `sensor.<name>_battery` | Battery %, from the standard BLE battery characteristic. |
 | `sensor.<name>_room_temperature` | Same value as the climate current temperature, as its own sensor for history/automations. |
 | `sensor.<name>_bluetooth_signal` | RSSI in dBm. Its `source` attribute tells you **which adapter/proxy** currently hears the device — handy for placing proxies. |
-| `sensor.<name>_last_poll` | Timestamp of the last successful full read. If this stops advancing, connections are failing. |
+| `sensor.<name>_last_poll` | Timestamp of the last successful full read. If this stops advancing, connections are failing and the other entities are showing **cached** values from this moment. |
+| `sensor.<name>_pending_commands` | How many changes are waiting to be written to the thermostat. Its `changes` attribute lists them in plain language (e.g. `setpoint -> 22.0 °C`) and `queued_since` says when the oldest was made. Stays available when the device is not. |
 | `sensor.<name>_weekly_schedule` | `programmed` / `not set`. Its attributes list the on-device weekly program per day in plain language (e.g. `mon: 00:00-07:00 away, 07:00-22:00 home, 22:00-24:00 away`). |
 
 ### Binary sensor (diagnostic)
@@ -189,6 +191,7 @@ The main thermostat.
 | Entity | Meaning |
 |---|---|
 | `binary_sensor.<name>_problem` | `on` if any device error flag is set. Its attributes break out the individual flags: `e9_valve_does_not_close`, `e10_invalid_time`, `e14_low_battery`, `e15_very_low_battery`. |
+| `binary_sensor.<name>_connection` | `on` while the radio link is actually working. Because the other entities keep showing cached values when a poll fails, **this is the entity to alert on**. Attributes: `last_success`, `last_advertisement`, `consecutive_failures`, `last_error`, `showing_cached_data`. Stays available when the device is not. |
 
 The famous **E10 (invalid time)** appears after a battery change, because the clock
 resets. This integration fixes it automatically — see [Time sync](#time-sync-button--service).
@@ -228,7 +231,8 @@ four-temperature model as the Danfoss app.
 | Entity | Meaning |
 |---|---|
 | `button.<name>_sync_time` | Manually writes the current local time to the device (see below). |
-| `button.<name>_refresh_now` | Forces an immediate read of the thermostat instead of waiting for the next poll — handy after a change, or to retry when a device has been out of range. |
+| `button.<name>_refresh_now` | Forces an immediate read of the thermostat instead of waiting for the next poll — handy after a change, or to retry when a device has been out of range. Also flushes anything queued. |
+| `button.<name>_discard_pending_commands` | Throws away commands that never reached the thermostat, e.g. after you change your mind about a setpoint you set while it was offline. |
 
 ---
 
@@ -240,7 +244,9 @@ Open the device's integration entry → **Configure**:
 |---|---|---|
 | **Poll interval (minutes)** | 15 | How often HA reads the device. Lower = fresher data but more battery use and BLE traffic. 10–30 min is sensible. |
 | **Device PIN (0 = none)** | 0 | If you set a PIN in the Danfoss app, enter it here. It is written before every read/write. |
-| **Automatically sync the device clock** | on | When on, HA writes the correct time whenever the device reports E10 or its clock drifts more than 2 minutes. |
+| **Automatically sync the device clock** | on | When on, HA writes the correct time whenever the device's clock drifts more than 2 minutes. `E10 invalid time` on its own also triggers a sync, but at most once a day — some units never clear the flag even with a correct clock. |
+| **Keep the last reading for (hours)** | 24 | How long cached values stay on show after polls start failing. `0` = keep them indefinitely. See [section 11](#11-offline-behaviour-cached-readings--queued-commands). |
+| **Keep undelivered commands for (hours)** | 24 | How long a queued command waits for the thermostat to reappear before being discarded. `0` = wait indefinitely. |
 
 Changing options reloads the entry (a brief reconnect).
 
@@ -381,7 +387,96 @@ actions:
 
 ---
 
-## 11. How the integration works internally
+## 11. Offline behaviour: cached readings & queued commands
+
+A Danfoss Eco is a coin-cell BLE device that spends most of its life asleep, usually
+several rooms away from the nearest proxy. Missed connections are **normal**, not
+exceptional: a proxy busy with something else, a firmware build pegging its CPU, a
+valve at the edge of range, or simply a Home Assistant restart will all produce a
+failed poll. This integration is built around that.
+
+### Readings are cached, not thrown away
+
+When a poll fails, the previous reading stays on show. That is honest: a radiator
+valve that could not be contacted has not changed its setpoint, its battery level or
+its weekly program — the only thing that is unknown is whether anything has moved
+since. So instead of blanking everything to *unavailable*, the integration keeps the
+values and tells you how old they are:
+
+- `sensor.<name>_last_poll` — when the data on screen was actually read
+- `binary_sensor.<name>_connection` — whether the link is up **right now**
+- the climate entity's `cached` attribute — `true` while running on cached data
+
+Entities only go *unavailable* once the cache passes **Keep the last reading for**
+(default 24 h; set `0` to keep it forever). The cache is persisted to
+`.storage/danfoss_eco.<entry_id>` and restored during startup, so restarting Home
+Assistant no longer empties your heating dashboard while the proxies re-register.
+
+> **Alerting:** because temperature entities no longer go unavailable, point any
+> "thermostat is offline" automation at `binary_sensor.<name>_connection` (or at the
+> age of `sensor.<name>_last_poll`), not at `climate.<name>`.
+
+### Commands are queued until the device is reachable
+
+Setting a temperature while the valve is out of reach used to fail. Now the change is
+put in a **pending queue**, shown immediately on the entity, and written the moment
+the thermostat is next reachable — including when that happens hours later, or after
+a Home Assistant restart.
+
+Queued commands are **coalesced, not appended**: a setpoint is a desired end state,
+not an event. If you move a slider from 21 to 22 to 23 while the device is offline,
+the valve receives exactly one write of 23 — not three. The same applies to modes,
+config switches (the last toggle of a bit wins) and the comfort/setback temperatures.
+
+Everything writable is queueable: setpoint, HVAC mode, the *Away* preset, every
+configuration number and switch, the comfort/setback temperatures, the weekly program
+and the clock sync.
+
+What you see while something is queued:
+
+| Where | What it shows |
+|---|---|
+| `climate.<name>` | The **requested** target temperature, plus `pending_writes` and `pending_target_temperature` attributes |
+| `sensor.<name>_pending_commands` | The number of queued changes; `changes` lists them, `queued_since` dates the oldest |
+| `button.<name>_discard_pending_commands` | Press to throw the queue away |
+
+A queued command that is never delivered expires after **Keep undelivered commands
+for** hours (default 24; `0` = never expire), so a thermostat that comes back after a
+week of holiday is not hit with stale instructions.
+
+The flush happens **inside the polling connection**: the coordinator reads the device,
+applies the queue to what the device holds *right now* (the settings block is a
+read-modify-write, so a queue entry made hours ago must not resurrect stale
+neighbouring fields), writes, and reads the changed characteristics back for
+confirmation. One radio wake-up, whatever is in the queue.
+
+### Getting back sooner
+
+Two mechanisms shorten the gap between "reachable again" and "actually read":
+
+- **A retry ladder.** A failed poll is retried after 1, 2, 5, 10 then 15 minutes,
+  rather than waiting out the full poll interval.
+- **Advertisement-triggered retry.** Any advertisement from the thermostat — the
+  earliest possible sign that it is back within range of a proxy — triggers a retry
+  immediately (rate-limited to once a minute). In practice these valves advertise
+  sparsely, which is why the timer above carries most of the recovery.
+
+Connections are also **serialized across every thermostat this integration owns**.
+Several valves usually share one proxy, and a proxy has very few connection slots;
+letting them all dial at once is the fastest route to
+`No backend with an available connection slot`.
+
+### What this does *not* fix
+
+Caching and queueing hide a flaky link; they do not create one. If
+`binary_sensor.<name>_connection` is mostly `off`, the RSSI sensor sits below about
+−90 dBm, or the log keeps saying *"not seen by any Bluetooth adapter/proxy"*, the
+device genuinely needs **another Bluetooth proxy nearer to it** — see
+[section 14](#14-bluetooth-proxies--range).
+
+---
+
+## 12. How the integration works internally
 
 - **Discovery** is declared in `manifest.json` via Bluetooth `local_name` matchers
   covering `0;0:04:2F*` … `9;0:04:2F*` (the leading digit varies). HA surfaces a
@@ -389,15 +484,25 @@ actions:
 - **The config flow** (`config_flow.py`) handles discovery, the pair/manual menu, the
   button-press step (which calls `EtrvClient.retrieve_secret_key`), and an options flow.
 - **A `DataUpdateCoordinator`** (`coordinator.py`) owns one device. On each interval it
-  makes **one connection** and reads battery, temperature, settings, errors and time,
-  parses them, and (if enabled) syncs the clock. All writes go through the coordinator,
-  which re-requests a refresh afterwards, so entities converge on real device state.
-- **Entities** are thin `CoordinatorEntity` views over the parsed state. Writes call
-  coordinator methods that re-serialize the relevant characteristic and send it.
+  makes **one connection**, flushes any queued writes against the freshly read state,
+  and reads battery, temperature, settings, errors, time and schedule. All writes go
+  through the coordinator, so entities converge on real device state.
+- **The pending queue** (`pending.py`) is a small coalescing structure — one desired
+  setpoint, one settings delta, one pair of config-bit masks, one schedule overlay —
+  that serializes to JSON. It is deliberately dependency-free so it can be unit-tested
+  without Home Assistant (`tests/test_pending.py`).
+- **The cache and queue** are persisted through HA's `Store` helper to
+  `.storage/danfoss_eco.<entry_id>` and reloaded before the first poll on startup.
+- **Entities** derive from a shared `EtrvEntity` base (`entity.py`) whose `available`
+  follows the *cache*, not the last poll — that is what keeps a momentarily unreachable
+  thermostat on the dashboard. Diagnostic entities that must work precisely when the
+  device is unreachable (*Connection*, *Pending commands*, *Refresh now*, *Discard
+  pending commands*) opt out of that with `_always_available`.
 - **The BLE layer** (`ble.py`) uses HA's `bluetooth` component plus
   `bleak-retry-connector` for robust connects, and uses **short-lived connections**:
   connect → PIN → do the work → disconnect. This suits the device's sleepy nature and
-  frees the proxy's limited connection slots between polls.
+  frees the proxy's limited connection slots between polls. A process-wide lock keeps
+  two thermostats from connecting at the same moment.
 - **Crypto** (`crypto.py`) is a self-contained pure-Python XXTEA; **payload parsing**
   (`protocol.py`) turns raw bytes into dataclasses and back.
 
@@ -407,7 +512,7 @@ pulled from PyPI at runtime.
 
 ---
 
-## 12. The protocol, byte by byte
+## 13. The protocol, byte by byte
 
 > For contributors and the curious. Addresses are the custom service `10020000-2749-0001-0000-00805f9b042f`.
 
@@ -498,7 +603,7 @@ Example (a real device, comfort 23 °C / setback 21 °C, home 07:00–22:00 ever
 
 ---
 
-## 13. Bluetooth proxies & range
+## 14. Bluetooth proxies & range
 
 - **A proxy near the radiators beats a distant adapter.** Aim for RSSI better than about
   **−90 dBm** on `sensor.<name>_bluetooth_signal`; the `source` attribute tells you which
@@ -513,7 +618,7 @@ Example (a real device, comfort 23 °C / setback 21 °C, home 07:00–22:00 ever
 
 ---
 
-## 14. Building a dashboard
+## 15. Building a dashboard
 
 The integration deliberately exposes **primitive entities** (one climate, plus numbers,
 switches, sensors) rather than a fixed card, so you can compose whatever dashboard you
@@ -634,7 +739,7 @@ views:
 
 ---
 
-## 15. Troubleshooting
+## 16. Troubleshooting
 
 **The device isn't discovered.**
 Check that a Bluetooth adapter/proxy is in range and that the eTRV has batteries.
@@ -647,13 +752,22 @@ while you click Submit. If it never works, power-cycle the ESP proxy (a stale BL
 can hide the key characteristic) and retry.
 
 **Everything paired but reads fail / `last_poll` stops advancing.**
-Usually range or a busy proxy. Move a proxy closer, or raise its `max_connections`.
-Check `sensor.<name>_bluetooth_signal`.
+Usually range or a busy proxy. The entities keep showing their last values (that is the
+cache doing its job — `binary_sensor.<name>_connection` will be `off` and the climate
+entity's `cached` attribute `true`), but nothing new is being read. Move a proxy closer,
+or raise its `max_connections`. Check `sensor.<name>_bluetooth_signal`.
 
-**A device stays *unavailable* but still shows a min/max range.**
-Those cached values prove it *has* polled successfully before — the current poll is just
-failing (range or contention). It will recover on the next successful poll; press
-**Refresh now** to retry immediately.
+**A device shows values but `Connection` is `off`.**
+That is cached data, exactly as designed — see
+[section 11](#11-offline-behaviour-cached-readings--queued-commands). `Last poll` tells
+you how old it is. Polls keep retrying on their own (1/2/5/10/15 min); **Refresh now**
+retries immediately.
+
+**I changed a setpoint and nothing happened on the radiator.**
+Check `sensor.<name>_pending_commands`. If it is `1` or more, the write is queued because
+the thermostat is not reachable — it will be delivered on the next successful connection.
+If it is `0` and the setpoint reverted, the device rejected the value (e.g. outside its
+own min/max limits).
 
 **One device is flaky / drops off while the others are fine.**
 That device is your weakest link (farthest from the proxy, or a thick wall in the way).
@@ -663,17 +777,18 @@ out-and-in) to wake its radio; (2) add a **second Bluetooth proxy** closer to it
 automatically routes each device to whichever proxy hears it best; (3) move the existing
 proxy. Watch `sensor.<name>_bluetooth_signal`; aim for better than −85 dBm.
 
-**Several devices go unavailable when I refresh them all at once.**
+**Several devices are slow when I refresh them all at once.**
 Expected. Each Danfoss connection is slow and holds a proxy connection slot for its whole
-poll, so firing *N* refreshes simultaneously makes them fight over the proxy and some time
-out. Refresh **one at a time**, or just let the scheduled polls run — they are naturally
-staggered. If you have many devices on one proxy, raise `esp32_ble: max_connections` in the
-proxy firmware and/or add another proxy.
+poll. The integration serializes its own connections so they queue rather than fight, but
+that means *N* simultaneous refreshes take *N* times as long. Just let the scheduled polls
+run. If you have many devices on one proxy, raise `esp32_ble: max_connections` in the proxy
+firmware and/or add another proxy.
 
 **"not seen by any Bluetooth adapter/proxy" right after restarting Home Assistant.**
 Transient. After a restart (or after the proxy reboots) the Bluetooth stack needs a minute
 or two to re-register the proxy's *connectable* routes; the first poll in that window fails.
-It clears itself on the next poll. (If it persists for many minutes, the proxy connection to
+The entities keep showing their restored cached readings meanwhile, and the retry ladder
+picks the device up again about a minute later. (If it persists for many minutes, the proxy connection to
 HA is the problem — see the proxy notes.)
 
 **"Refresh now" does something, but calling `homeassistant.update_entity` does nothing.**
@@ -713,7 +828,7 @@ logger:
 
 ---
 
-## 16. FAQ
+## 17. FAQ
 
 **Do I need a Danfoss gateway/hub?** No. Just Bluetooth (adapter or ESPHome proxy).
 
@@ -736,10 +851,20 @@ is a good balance; alkaline AAs typically last a heating season or more.
 **Is my secret key safe?** It's stored in your Home Assistant config entry, like any other
 device credential, and never leaves your instance.
 
-**Why do I see the device with all entities "unavailable"?** Setup deliberately succeeds
-even if the first read fails (these devices are often briefly unreachable), so you always
-get the device page and a working **Refresh now** button. The entities populate on the first
-successful poll.
+**Why do I see the device with all entities "unavailable"?** Only before its very first
+successful poll (there is nothing cached yet). Setup deliberately succeeds even if that read
+fails, so you always get the device page and a working **Refresh now** button. After the
+first success, a failed poll shows the cached reading instead of blanking the device — see
+[section 11](#11-offline-behaviour-cached-readings--queued-commands).
+
+**Can I trust the temperature I see?** Check `Last poll` (or the climate entity's `cached`
+attribute). If `binary_sensor.<name>_connection` is `on`, the reading is current; if it is
+`off`, you are looking at the last value read at `Last poll`.
+
+**What happens to a setpoint I change while the thermostat is offline?** It is queued and
+written the moment the device is reachable again, surviving Home Assistant restarts. The
+entity shows the value you asked for, and `sensor.<name>_pending_commands` shows it is not
+delivered yet.
 
 **How many thermostats can one proxy handle?** A handful, but each poll is slow and holds a
 connection slot, so they should not all connect at once. For more than ~3 on one proxy,
@@ -751,7 +876,7 @@ proxies automatically.
 
 ---
 
-## 17. Credits, license & prior art
+## 18. Credits, license & prior art
 
 This integration stands on community reverse-engineering of the eTRV protocol:
 

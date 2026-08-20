@@ -45,6 +45,7 @@ async def async_get_config_entry_diagnostics(
             "rssi": data.rssi,
             "source": data.source,
             "clock_drift_s": data.device_time.drift_seconds,
+            "last_poll": data.last_poll.isoformat(),
             "schedule": data.schedule.as_attributes() if data.schedule else None,
         }
     return {
@@ -54,5 +55,19 @@ async def async_get_config_entry_diagnostics(
             "options": dict(entry.options),
         },
         "last_update_success": coordinator.last_update_success,
+        "connection": {
+            "last_success": (
+                coordinator.last_success.isoformat()
+                if coordinator.last_success
+                else None
+            ),
+            "last_advertisement": (
+                coordinator.last_seen.isoformat() if coordinator.last_seen else None
+            ),
+            "consecutive_failures": coordinator.consecutive_failures,
+            "last_error": coordinator.last_error,
+            "showing_cached_data": coordinator.is_stale,
+        },
+        "pending_writes": coordinator.pending.as_dict(),
         "state": state,
     }

@@ -16,10 +16,27 @@ CONF_SECRET_KEY = "secret_key"
 CONF_PIN = "pin"
 CONF_POLL_INTERVAL = "poll_interval"
 CONF_AUTO_TIME_SYNC = "auto_time_sync"
+CONF_CACHE_TTL = "cache_ttl_hours"
+CONF_QUEUE_TTL = "queue_ttl_hours"
 
 DEFAULT_PIN = 0
 DEFAULT_POLL_INTERVAL_MIN = 15
 DEFAULT_AUTO_TIME_SYNC = True
+# How long the last successful reading keeps entities available while the
+# thermostat is out of reach. 0 = keep the cached reading forever.
+DEFAULT_CACHE_TTL_HOURS = 24
+# How long an undelivered write waits for the device to come back. 0 = forever.
+DEFAULT_QUEUE_TTL_HOURS = 24
+
+# Persisted cache/queue (one file per config entry).
+STORAGE_VERSION = 1
+
+# Retry ladder used after a failed poll, in seconds. The device is a sleepy BLE
+# thermostat behind a proxy, so a failure usually means "out of range right
+# now" - retry soon at first, then back off towards the normal poll interval.
+RETRY_BACKOFF_S = (60, 120, 300, 600, 900)
+# Never let an advertisement burst trigger more than one retry this often.
+ADV_RETRY_MIN_INTERVAL_S = 60
 
 # --- GATT UUIDs (settings service) -----------------------------------------
 UUID_SERVICE_SETTINGS = "10020000-2749-0001-0000-00805f9b042f"

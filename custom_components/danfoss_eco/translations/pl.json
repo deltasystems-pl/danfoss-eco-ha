@@ -76,7 +76,9 @@
         "data": {
           "poll_interval": "Częstotliwość odpytywania (minuty)",
           "pin": "PIN urządzenia (0 = brak)",
-          "auto_time_sync": "Automatycznie synchronizuj zegar urządzenia"
+          "auto_time_sync": "Automatycznie synchronizuj zegar urządzenia",
+          "cache_ttl_hours": "Przechowuj ostatni odczyt przez (godziny, 0 = bez limitu)",
+          "queue_ttl_hours": "Przechowuj niedostarczone polecenia przez (godziny, 0 = bez limitu)"
         }
       }
     }
@@ -94,11 +96,17 @@
       },
       "schedule": {
         "name": "Harmonogram tygodniowy"
+      },
+      "pending_writes": {
+        "name": "Oczekujące polecenia"
       }
     },
     "binary_sensor": {
       "problem": {
         "name": "Problem"
+      },
+      "connection": {
+        "name": "Połączenie"
       }
     },
     "button": {
@@ -107,6 +115,9 @@
       },
       "refresh": {
         "name": "Odśwież teraz"
+      },
+      "discard_pending": {
+        "name": "Odrzuć oczekujące polecenia"
       }
     },
     "switch": {

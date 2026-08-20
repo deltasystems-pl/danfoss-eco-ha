@@ -76,7 +76,9 @@
         "data": {
           "poll_interval": "Polling-interval (minutter)",
           "pin": "Enhedens PIN (0 = ingen)",
-          "auto_time_sync": "Synkroniser enhedens ur automatisk"
+          "auto_time_sync": "Synkroniser enhedens ur automatisk",
+          "cache_ttl_hours": "Behold seneste aflæsning i (timer, 0 = for altid)",
+          "queue_ttl_hours": "Behold uleverede kommandoer i (timer, 0 = for altid)"
         }
       }
     }
@@ -94,11 +96,17 @@
       },
       "schedule": {
         "name": "Ugeskema"
+      },
+      "pending_writes": {
+        "name": "Ventende kommandoer"
       }
     },
     "binary_sensor": {
       "problem": {
         "name": "Problem"
+      },
+      "connection": {
+        "name": "Forbindelse"
       }
     },
     "button": {
@@ -107,6 +115,9 @@
       },
       "refresh": {
         "name": "Opdater nu"
+      },
+      "discard_pending": {
+        "name": "Kassér ventende kommandoer"
       }
     },
     "switch": {

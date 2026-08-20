@@ -13,13 +13,11 @@ from homeassistant.components.number import (
 )
 from homeassistant.const import EntityCategory, UnitOfTemperature
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers.device_registry import DeviceInfo, format_mac
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
-from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from . import DanfossEcoConfigEntry
-from .const import DOMAIN
 from .coordinator import EtrvCoordinator, EtrvState
+from .entity import EtrvEntity
 
 # Serialize BLE commands to one device at a time.
 PARALLEL_UPDATES = 1
@@ -121,18 +119,14 @@ async def async_setup_entry(
     async_add_entities(EtrvNumber(coordinator, d) for d in NUMBERS)
 
 
-class EtrvNumber(CoordinatorEntity[EtrvCoordinator], NumberEntity):
-    _attr_has_entity_name = True
+class EtrvNumber(EtrvEntity, NumberEntity):
     entity_description: EtrvNumberDescription
 
     def __init__(
         self, coordinator: EtrvCoordinator, description: EtrvNumberDescription
     ) -> None:
-        super().__init__(coordinator)
+        super().__init__(coordinator, description.key)
         self.entity_description = description
-        mac = format_mac(coordinator.address)
-        self._attr_unique_id = f"{mac}_{description.key}"
-        self._attr_device_info = DeviceInfo(identifiers={(DOMAIN, mac)})
 
     @property
     def native_value(self) -> float | None:

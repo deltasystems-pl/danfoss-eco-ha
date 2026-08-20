@@ -16,11 +16,11 @@ from homeassistant.const import ATTR_TEMPERATURE, UnitOfTemperature
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.device_registry import DeviceInfo, format_mac
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
-from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from . import DanfossEcoConfigEntry
 from .const import DOMAIN, MANUFACTURER, MODEL, DeviceMode
 from .coordinator import EtrvCoordinator
+from .entity import EtrvEntity
 
 # Serialize BLE commands to one device at a time.
 PARALLEL_UPDATES = 1
@@ -34,10 +34,9 @@ async def async_setup_entry(
     async_add_entities([EtrvClimate(entry.runtime_data, entry)])
 
 
-class EtrvClimate(CoordinatorEntity[EtrvCoordinator], ClimateEntity):
+class EtrvClimate(EtrvEntity, ClimateEntity):
     """The radiator valve as a thermostat."""
 
-    _attr_has_entity_name = True
     _attr_name = None
     _attr_temperature_unit = UnitOfTemperature.CELSIUS
     _attr_target_temperature_step = 0.5
@@ -49,7 +48,8 @@ class EtrvClimate(CoordinatorEntity[EtrvCoordinator], ClimateEntity):
 
     def __init__(self, coordinator: EtrvCoordinator, entry: DanfossEcoConfigEntry) -> None:
         super().__init__(coordinator)
-        self._attr_unique_id = format_mac(coordinator.address)
+        # The climate entity carries the full device identity; the other
+        # platforms attach to it by identifier alone.
         self._attr_device_info = DeviceInfo(
             identifiers={(DOMAIN, format_mac(coordinator.address))},
             connections={("bluetooth", coordinator.address)},
@@ -105,6 +105,20 @@ class EtrvClimate(CoordinatorEntity[EtrvCoordinator], ClimateEntity):
         if data and data.settings.mode == DeviceMode.VACATION:
             return PRESET_AWAY
         return PRESET_NONE
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        """Surface cache age and undelivered commands where the user looks."""
+        coordinator = self.coordinator
+        attrs: dict[str, Any] = {
+            "cached": coordinator.is_stale,
+            "pending_writes": coordinator.pending.count,
+        }
+        if coordinator.data is not None:
+            attrs["last_poll"] = coordinator.data.last_poll.isoformat()
+        if coordinator.pending.set_point is not None:
+            attrs["pending_target_temperature"] = coordinator.pending.set_point
+        return attrs
 
     # ---------------------------------------------------------- commands ---
     async def async_set_temperature(self, **kwargs: Any) -> None:

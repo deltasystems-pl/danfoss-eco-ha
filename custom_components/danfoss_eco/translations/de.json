@@ -76,7 +76,9 @@
         "data": {
           "poll_interval": "Abfrageintervall (Minuten)",
           "pin": "Geräte-PIN (0 = keine)",
-          "auto_time_sync": "Geräteuhr automatisch synchronisieren"
+          "auto_time_sync": "Geräteuhr automatisch synchronisieren",
+          "cache_ttl_hours": "Letzten Messwert behalten für (Stunden, 0 = unbegrenzt)",
+          "queue_ttl_hours": "Nicht zugestellte Befehle behalten für (Stunden, 0 = unbegrenzt)"
         }
       }
     }
@@ -94,11 +96,17 @@
       },
       "schedule": {
         "name": "Wochenplan"
+      },
+      "pending_writes": {
+        "name": "Ausstehende Befehle"
       }
     },
     "binary_sensor": {
       "problem": {
         "name": "Problem"
+      },
+      "connection": {
+        "name": "Verbindung"
       }
     },
     "button": {
@@ -107,6 +115,9 @@
       },
       "refresh": {
         "name": "Jetzt aktualisieren"
+      },
+      "discard_pending": {
+        "name": "Ausstehende Befehle verwerfen"
       }
     },
     "switch": {

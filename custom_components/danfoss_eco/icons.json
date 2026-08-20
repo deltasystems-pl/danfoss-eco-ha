@@ -43,6 +43,9 @@
       },
       "refresh": {
         "default": "mdi:refresh"
+      },
+      "discard_pending": {
+        "default": "mdi:tray-remove"
       }
     },
     "sensor": {
@@ -51,6 +54,12 @@
       },
       "last_poll": {
         "default": "mdi:history"
+      },
+      "pending_writes": {
+        "default": "mdi:tray-full"
+      },
+      "schedule": {
+        "default": "mdi:calendar-clock"
       }
     }
   },
@@ -60,6 +69,9 @@
     },
     "set_vacation": {
       "service": "mdi:palm-tree"
+    },
+    "set_schedule": {
+      "service": "mdi:calendar-clock"
     }
   }
 }

@@ -5,6 +5,7 @@ from __future__ import annotations
 import logging
 
 import voluptuous as vol
+from homeassistant.components import bluetooth
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant, ServiceCall
@@ -70,13 +71,29 @@ type DanfossEcoConfigEntry = ConfigEntry[EtrvCoordinator]
 async def async_setup_entry(hass: HomeAssistant, entry: DanfossEcoConfigEntry) -> bool:
     coordinator = EtrvCoordinator(hass, entry)
     entry.runtime_data = coordinator
+    # Bring back the last reading and any undelivered writes before the first
+    # poll, so a restart doesn't blank the dashboard or drop commands.
+    await coordinator.async_load_cache()
     # These are weak-signal, deep-sleeping BLE devices, so the first read may
     # fail simply because the thermostat is momentarily unreachable. Don't block
-    # setup on it: create the entities (they show "unavailable" until a poll
-    # succeeds) so the user always has the device page and can hit "Refresh now"
-    # to retry. The coordinator keeps retrying on its normal interval too.
+    # setup on it: create the entities (they show the cached reading, or
+    # "unavailable" if there is none) so the user always has the device page and
+    # can hit "Refresh now". The coordinator keeps retrying on its own too.
     await coordinator.async_refresh()
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
+    # A thermostat that starts advertising again is the earliest signal that it
+    # is reachable - use it to retry immediately instead of waiting out the poll
+    # interval, which is what actually delivers queued commands "when it comes
+    # back near a proxy".
+    entry.async_on_unload(
+        bluetooth.async_register_callback(
+            hass,
+            coordinator.async_device_seen,
+            {"address": coordinator.address, "connectable": True},
+            bluetooth.BluetoothScanningMode.PASSIVE,
+        )
+    )
+    entry.async_on_unload(coordinator.async_cancel_retry)
     entry.async_on_unload(entry.add_update_listener(_async_update_listener))
     _async_register_services(hass)
     return True
@@ -88,6 +105,13 @@ async def _async_update_listener(hass: HomeAssistant, entry: ConfigEntry) -> Non
 
 async def async_unload_entry(hass: HomeAssistant, entry: DanfossEcoConfigEntry) -> bool:
     return await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
+
+
+async def async_remove_entry(hass: HomeAssistant, entry: DanfossEcoConfigEntry) -> None:
+    """Drop the cached reading / pending writes when the device is removed."""
+    coordinator = getattr(entry, "runtime_data", None)
+    if coordinator is not None:
+        await coordinator.async_remove_cache()
 
 
 def _coordinator_for_device(hass: HomeAssistant, device_id: str) -> EtrvCoordinator:
@@ -119,22 +143,20 @@ def _async_register_services(hass: HomeAssistant) -> None:
 
     async def _set_schedule(call: ServiceCall) -> None:
         coordinator = _coordinator_for_device(hass, call.data["device_id"])
-        if coordinator.data is None or coordinator.data.schedule is None:
-            raise EtrvError("Schedule not loaded yet; try again after a poll")
-        sched = coordinator.data.schedule
-        if "home_temperature" in call.data:
-            sched.home_temperature = call.data["home_temperature"]
-        if "away_temperature" in call.data:
-            sched.away_temperature = call.data["away_temperature"]
+        if "home_temperature" in call.data or "away_temperature" in call.data:
+            await coordinator.async_set_schedule_temps(
+                home=call.data.get("home_temperature"),
+                away=call.data.get("away_temperature"),
+            )
         days_in = call.data.get("days")
         if days_in is not None:
-            # days: list of 7 lists of "HH:MM" transition strings (home starts
-            # after the first mark; before it the device is in setback/away)
-            for idx, marks in enumerate(days_in):
-                if idx >= 7:
-                    break
-                sched.days[idx] = sorted(_hhmm_to_mark(m) for m in marks)
-        await coordinator.async_set_schedule(sched)
+            # days: list of up to 7 lists of "HH:MM" transition strings (home
+            # starts after the first mark; before it the device is in setback).
+            # Days not listed stay as the thermostat has them.
+            days: list[list[int] | None] = [None] * 7
+            for idx, marks in enumerate(days_in[:7]):
+                days[idx] = sorted(_hhmm_to_mark(m) for m in marks)
+            await coordinator.async_set_schedule_days(days)
 
     hass.services.async_register(
         DOMAIN, SERVICE_SET_SCHEDULE, _set_schedule, schema=_SCHEDULE_SCHEMA

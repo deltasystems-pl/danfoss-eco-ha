@@ -40,6 +40,12 @@ addresses, no hex keys and no command-line tools.
   adapter/proxy hears the device), last-poll timestamp, and a *Problem* sensor that
   decodes the device error flags (E9 valve, E10 time, E14/E15 battery); plus a
   **downloadable diagnostics** snapshot (secret key & address redacted)
+- 🧊 **Survives a thermostat that drops out of range** — the last reading keeps
+  showing (with its timestamp) instead of the device going *unavailable*, and it
+  is restored across Home Assistant restarts
+- 📮 **Commands are queued, never lost** — change a setpoint while the valve is
+  unreachable and it is written the moment the device is back within range of a
+  proxy; the pending change shows on the entity and survives a restart
 - 🔄 **Refresh now** — a button to force an immediate read instead of waiting for
   the next poll
 - ♻️ **Reconfigure** — update a device's secret key or PIN from the UI, no need to
@@ -55,6 +61,17 @@ guide covering every entity, option and service, how the device and protocol wor
 to build a dashboard, Bluetooth-proxy placement, troubleshooting and an FAQ.
 
 Version history is in the **[CHANGELOG](CHANGELOG.md)**.
+
+### A note on flaky links
+
+Bluetooth radiator valves are not always reachable — a proxy can be busy, a valve
+can be at the edge of range, batteries sag. This integration treats that as normal
+rather than as an error: readings are cached and keep their timestamp, commands are
+queued and delivered when the device reappears, and a failed poll is retried on a
+1/2/5/10/15-minute ladder as well as immediately whenever the thermostat is heard
+advertising. If a device is *permanently* out of range the real fix is still
+another proxy — see the *Connection* sensor and the RSSI sensor to tell which case
+you are in.
 
 ### A note on speed
 

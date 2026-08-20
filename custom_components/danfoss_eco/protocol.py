@@ -129,11 +129,15 @@ class Errors:
     """Payload of UUID_ERRORS (8 bytes decrypted, uint16 flags at offset 0)."""
 
     flags: dict[str, bool]
+    raw: bytes = b""
 
     @classmethod
     def parse(cls, data: bytes) -> "Errors":
         bits = struct.unpack_from(">H", data, 0)[0]
-        return cls(flags={name: bool(bits & (1 << bit)) for name, bit in ERROR_FLAGS.items()})
+        return cls(
+            flags={name: bool(bits & (1 << bit)) for name, bit in ERROR_FLAGS.items()},
+            raw=bytes(data),
+        )
 
     @property
     def any_error(self) -> bool:

@@ -22,13 +22,17 @@ from homeassistant.const import CONF_ADDRESS
 
 from .const import (
     CONF_AUTO_TIME_SYNC,
+    CONF_CACHE_TTL,
     CONF_PIN,
     CONF_POLL_INTERVAL,
+    CONF_QUEUE_TTL,
     CONF_SECRET_KEY,
     DANFOSS_OUI,
     DEFAULT_AUTO_TIME_SYNC,
+    DEFAULT_CACHE_TTL_HOURS,
     DEFAULT_PIN,
     DEFAULT_POLL_INTERVAL_MIN,
+    DEFAULT_QUEUE_TTL_HOURS,
     DOMAIN,
 )
 
@@ -270,7 +274,7 @@ class DanfossEcoConfigFlow(ConfigFlow, domain=DOMAIN):
 
 
 class DanfossEcoOptionsFlow(OptionsFlow):
-    """Options: poll interval, PIN, auto time sync."""
+    """Options: poll interval, PIN, auto time sync, cache and queue lifetimes."""
 
     async def async_step_init(
         self, user_input: dict[str, Any] | None = None
@@ -297,6 +301,14 @@ class DanfossEcoOptionsFlow(OptionsFlow):
                         CONF_AUTO_TIME_SYNC,
                         default=opts.get(CONF_AUTO_TIME_SYNC, DEFAULT_AUTO_TIME_SYNC),
                     ): bool,
+                    vol.Required(
+                        CONF_CACHE_TTL,
+                        default=opts.get(CONF_CACHE_TTL, DEFAULT_CACHE_TTL_HOURS),
+                    ): vol.All(int, vol.Range(min=0, max=720)),
+                    vol.Required(
+                        CONF_QUEUE_TTL,
+                        default=opts.get(CONF_QUEUE_TTL, DEFAULT_QUEUE_TTL_HOURS),
+                    ): vol.All(int, vol.Range(min=0, max=720)),
                 }
             ),
         )

@@ -18,13 +18,11 @@ from homeassistant.const import (
     UnitOfTemperature,
 )
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers.device_registry import DeviceInfo, format_mac
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
-from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from . import DanfossEcoConfigEntry
-from .const import DOMAIN
 from .coordinator import EtrvCoordinator, EtrvState
+from .entity import EtrvEntity
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -83,21 +81,19 @@ async def async_setup_entry(
     async_add_entities: AddEntitiesCallback,
 ) -> None:
     coordinator = entry.runtime_data
-    async_add_entities(EtrvSensor(coordinator, d) for d in SENSORS)
+    async_add_entities(
+        [*(EtrvSensor(coordinator, d) for d in SENSORS), EtrvPendingSensor(coordinator)]
+    )
 
 
-class EtrvSensor(CoordinatorEntity[EtrvCoordinator], SensorEntity):
-    _attr_has_entity_name = True
+class EtrvSensor(EtrvEntity, SensorEntity):
     entity_description: EtrvSensorDescription
 
     def __init__(
         self, coordinator: EtrvCoordinator, description: EtrvSensorDescription
     ) -> None:
-        super().__init__(coordinator)
+        super().__init__(coordinator, description.key)
         self.entity_description = description
-        mac = format_mac(coordinator.address)
-        self._attr_unique_id = f"{mac}_{description.key}"
-        self._attr_device_info = DeviceInfo(identifiers={(DOMAIN, mac)})
 
     @property
     def native_value(self):  # noqa: ANN201
@@ -115,3 +111,24 @@ class EtrvSensor(CoordinatorEntity[EtrvCoordinator], SensorEntity):
         if self.entity_description.key == "schedule" and data.schedule:
             return data.schedule.as_attributes()
         return None
+
+
+class EtrvPendingSensor(EtrvEntity, SensorEntity):
+    """How many changes are waiting for the thermostat to come back in range."""
+
+    _attr_translation_key = "pending_writes"
+    _attr_entity_category = EntityCategory.DIAGNOSTIC
+    _attr_state_class = SensorStateClass.MEASUREMENT
+    _always_available = True
+
+    def __init__(self, coordinator: EtrvCoordinator) -> None:
+        super().__init__(coordinator, "pending_writes")
+
+    @property
+    def native_value(self) -> int:
+        return self.coordinator.pending.count
+
+    @property
+    def extra_state_attributes(self) -> dict:
+        pending = self.coordinator.pending
+        return {"queued_since": pending.queued_at, "changes": pending.describe()}

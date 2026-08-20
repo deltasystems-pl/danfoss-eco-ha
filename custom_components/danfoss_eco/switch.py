@@ -8,13 +8,11 @@ from typing import Any
 from homeassistant.components.switch import SwitchEntity, SwitchEntityDescription
 from homeassistant.const import EntityCategory
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers.device_registry import DeviceInfo, format_mac
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
-from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from . import DanfossEcoConfigEntry
-from .const import DOMAIN
 from .coordinator import EtrvCoordinator
+from .entity import EtrvEntity
 from .protocol import Settings
 
 # Serialize BLE commands to one device at a time.
@@ -84,20 +82,16 @@ async def async_setup_entry(
     async_add_entities(EtrvConfigSwitch(coordinator, d) for d in SWITCHES)
 
 
-class EtrvConfigSwitch(CoordinatorEntity[EtrvCoordinator], SwitchEntity):
+class EtrvConfigSwitch(EtrvEntity, SwitchEntity):
     """One settings config bit as a switch."""
 
-    _attr_has_entity_name = True
     entity_description: EtrvSwitchDescription
 
     def __init__(
         self, coordinator: EtrvCoordinator, description: EtrvSwitchDescription
     ) -> None:
-        super().__init__(coordinator)
+        super().__init__(coordinator, description.key)
         self.entity_description = description
-        mac = format_mac(coordinator.address)
-        self._attr_unique_id = f"{mac}_{description.key}"
-        self._attr_device_info = DeviceInfo(identifiers={(DOMAIN, mac)})
 
     @property
     def is_on(self) -> bool | None:

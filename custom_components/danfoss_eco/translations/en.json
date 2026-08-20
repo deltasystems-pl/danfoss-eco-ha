@@ -76,7 +76,9 @@
         "data": {
           "poll_interval": "Poll interval (minutes)",
           "pin": "Device PIN (0 = none)",
-          "auto_time_sync": "Automatically sync the device clock"
+          "auto_time_sync": "Automatically sync the device clock",
+          "cache_ttl_hours": "Keep the last reading for (hours, 0 = forever)",
+          "queue_ttl_hours": "Keep undelivered commands for (hours, 0 = forever)"
         }
       }
     }
@@ -94,11 +96,17 @@
       },
       "schedule": {
         "name": "Weekly schedule"
+      },
+      "pending_writes": {
+        "name": "Pending commands"
       }
     },
     "binary_sensor": {
       "problem": {
         "name": "Problem"
+      },
+      "connection": {
+        "name": "Connection"
       }
     },
     "button": {
@@ -107,6 +115,9 @@
       },
       "refresh": {
         "name": "Refresh now"
+      },
+      "discard_pending": {
+        "name": "Discard pending commands"
       }
     },
     "switch": {

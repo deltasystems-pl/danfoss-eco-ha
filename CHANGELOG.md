@@ -2,6 +2,43 @@
 
 All notable changes to this integration. Dates are release dates.
 
+## v1.3.0 — offline resilience
+
+Radiator valves are weak-signal, deep-sleeping BLE devices. A proxy that is busy
+(an ESPHome build pegging its CPU), a valve that drifts out of range, or a Home
+Assistant restart used to blank the whole device and throw away whatever the user
+had just asked for. That is now handled:
+
+- **Cached readings.** A failed poll no longer makes the device *unavailable*.
+  The last successful reading stays on show for `Keep the last reading for`
+  hours (default 24, `0` = forever), and `Last poll` tells you how old it is.
+  The cache is written to `.storage/danfoss_eco.<entry_id>` and restored on
+  startup, so a restart no longer blanks the dashboard either.
+- **Queued commands.** Setting a temperature (or a mode, config switch, comfort/
+  setback temperature or weekly program) while the thermostat is out of reach no
+  longer fails — the change is coalesced into a persistent queue, shown
+  immediately on the entity, and written the moment the device is next reachable.
+  Undelivered commands expire after `Keep undelivered commands for` hours
+  (default 24, `0` = forever).
+- **Faster recovery.** A failed poll is retried after 1, 2, 5, 10 then 15 minutes
+  instead of waiting out the whole poll interval, and an advertisement from the
+  thermostat triggers an immediate retry — so a valve that comes back within
+  range of a proxy is picked up straight away.
+- **New entities:** *Connection* (binary sensor — whether the radio link is
+  actually up, with last success / last advertisement / last error attributes),
+  *Pending commands* (sensor — count, with a readable list of what is queued),
+  and *Discard pending commands* (button). The climate entity gained `cached`,
+  `pending_writes`, `last_poll` and `pending_target_temperature` attributes.
+- **One connection per cycle.** Queued writes are flushed inside the polling
+  connection and applied to the settings block the device holds *right now*, then
+  read back for confirmation — no separate radio wake-up per command.
+- **Connections are serialized across all thermostats.** Three valves dialling
+  one proxy at once is the quickest way to produce *"no backend with an available
+  connection slot"*.
+- Fix: a device that keeps the `E10 invalid time` flag raised even after its clock
+  has been written correctly (seen on real hardware) no longer queues a clock sync
+  on every single poll — E10 alone now triggers at most one resync per day.
+
 ## v1.2.4
 - Fix `Handler DanfossEcoConfigFlow doesn't support step no_devices` crash when
   opening the setup flow while nothing was being advertised (missing
