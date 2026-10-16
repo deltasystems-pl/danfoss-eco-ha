@@ -14,7 +14,7 @@ import logging
 import struct
 from collections.abc import Callable
 
-from bleak.exc import BleakError
+from bleak.exc import BleakCharacteristicNotFoundError, BleakError
 from bleak_retry_connector import (
     BleakClientWithServiceCache,
     close_stale_connections_by_address,
@@ -70,6 +70,10 @@ class EtrvNotFoundError(EtrvError):
     """No connectable BLEDevice available."""
 
 
+class EtrvCharacteristicMissing(EtrvError):
+    """A characteristic is missing from the (possibly stale) service table."""
+
+
 class EtrvButtonNotPressed(EtrvError):
     """Secret-key characteristic absent - pairing button was not pressed."""
 
@@ -109,6 +113,10 @@ class EtrvClient:
         try:
             pin_bytes = struct.pack(">I", self._pin)
             await client.write_gatt_char(UUID_PIN, pin_bytes, response=True)
+        except BleakCharacteristicNotFoundError as err:
+            await self._clear_service_cache(client)
+            await client.disconnect()
+            raise EtrvCharacteristicMissing(f"PIN write failed: {err}") from err
         except BleakError as err:
             await client.disconnect()
             raise EtrvError(f"PIN write failed: {err}") from err
@@ -117,6 +125,8 @@ class EtrvClient:
     async def _read(self, client, uuid: str, *, decode: bool = True) -> bytes:
         try:
             data = bytes(await client.read_gatt_char(uuid))
+        except BleakCharacteristicNotFoundError as err:
+            raise EtrvCharacteristicMissing(f"Read {uuid[4:8]} failed: {err}") from err
         except BleakError as err:
             raise EtrvError(f"Read {uuid[4:8]} failed: {err}") from err
         if not decode:
@@ -135,6 +145,8 @@ class EtrvClient:
             await client.write_gatt_char(
                 uuid, etrv_encode(payload, self._key), response=True
             )
+        except BleakCharacteristicNotFoundError as err:
+            raise EtrvCharacteristicMissing(f"Write {uuid[4:8]} failed: {err}") from err
         except BleakError as err:
             raise EtrvError(f"Write {uuid[4:8]} failed: {err}") from err
 
@@ -203,8 +215,23 @@ class EtrvClient:
                 if written.intersection(_SCHEDULE_UUIDS):
                     raw["schedule"] = await self._read_schedule(client)
                 return raw
+            except EtrvCharacteristicMissing:
+                # The service table is cached across connections (and survives
+                # a config entry reload). If discovery was ever incomplete,
+                # every poll fails on the same missing characteristic until
+                # the cache is dropped, so drop it and let the next poll
+                # re-discover.
+                await self._clear_service_cache(client)
+                raise
             finally:
                 await client.disconnect()
+
+    async def _clear_service_cache(self, client) -> None:
+        try:
+            await client.clear_cache()
+            _LOGGER.debug("%s: cleared cached service table", self.address)
+        except Exception as err:  # noqa: BLE001 - best effort
+            _LOGGER.debug("%s: clearing service cache failed: %s", self.address, err)
 
     async def read_name(self) -> str | None:
         from .protocol import parse_name
