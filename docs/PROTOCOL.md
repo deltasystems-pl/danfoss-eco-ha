@@ -31,7 +31,7 @@ The device advertises continuously as a connectable BLE peripheral:
 | Settings | `...03` | 0x2A | read/write | 16 B settings block (below) |
 | Temperature | `...05` | 0x2D | read/write | 8 B: `[0]` setpoint, `[1]` room temp (both ×0.5 °C); write back the full block with `[0]` changed |
 | Name | `...06` | 0x30 | read/write | device name, UTF-8, NUL-padded |
-| Current time | `...08` | — | read/write | `int32 BE` local epoch (UTC + offset), `int32 BE` UTC-offset seconds |
+| Current time | `...08` | — | read/write | `int32 BE` UTC epoch, `int32 BE` standard UTC offset in seconds, **without DST**. The device adds the offset itself and applies DST when settings config bit `0x02` is set (official app: `Date.getTime()/1000` + `TimeZone.getRawOffset()/1000`) |
 | Errors | `...09` | 0x39 | read | 8 B: `uint16 BE` flags at offset 0 (below) |
 | **Secret key** | `...0b` | 0x3F | read | 16 B raw key — **characteristic only exists in the GATT table while the pairing window is open** |
 

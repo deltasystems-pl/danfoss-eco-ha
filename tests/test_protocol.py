@@ -29,7 +29,13 @@ pkg.__path__ = [_DIR]
 sys.modules["danfoss_eco"] = pkg
 
 from danfoss_eco.crypto import etrv_decode, etrv_encode  # noqa: E402
-from danfoss_eco.protocol import Errors, Schedule, Settings, Temperature  # noqa: E402
+from danfoss_eco.protocol import (  # noqa: E402
+    DeviceTime,
+    Errors,
+    Schedule,
+    Settings,
+    Temperature,
+)
 
 # TV (00:04:2F:80:BB:16) schedule, decoded bytes captured from real hardware
 SCHED_D = bytes.fromhex("2e2a0e2c000000000e2c000000000e2c00000000")  # 20B
@@ -121,6 +127,20 @@ def test_schedule_pack_roundtrip():
     assert s2.home_temperature == 22.5
     assert s2.days[2] == [12, 40]
     assert s2.days[0] == [14, 44]
+
+
+def test_device_time_now_is_utc_with_standard_offset():
+    # Same as the official app: UTC epoch + standard offset; the device adds the
+    # offset and applies DST itself (config bit 0x02).
+    import time
+
+    before = int(time.time())
+    t = DeviceTime.now()
+    after = int(time.time())
+    assert before <= t.time_local <= after, t
+    assert t.offset == -time.timezone, t
+    assert DeviceTime.parse(t.pack()) == t
+    assert t.drift_seconds <= 1
 
 
 if __name__ == "__main__":

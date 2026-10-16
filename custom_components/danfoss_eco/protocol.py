@@ -146,7 +146,12 @@ class Errors:
 
 @dataclass
 class DeviceTime:
-    """Payload of UUID_CURRENT_TIME (8 bytes decrypted): local epoch + offset."""
+    """Payload of UUID_CURRENT_TIME (8 bytes decrypted): UTC epoch + offset.
+
+    The device adds the offset itself and applies DST on its own when config
+    bit 0x02 is set, so the offset is the standard one, without DST. This is
+    what the official app writes (UTC epoch + TimeZone.getRawOffset()).
+    """
 
     time_local: int
     offset: int
@@ -158,8 +163,7 @@ class DeviceTime:
 
     @classmethod
     def now(cls) -> "DeviceTime":
-        offset = -time.timezone if not time.localtime().tm_isdst else -time.altzone
-        return cls(time_local=int(time.time()) + offset, offset=offset)
+        return cls(time_local=int(time.time()), offset=-time.timezone)
 
     def pack(self) -> bytes:
         return struct.pack(">ii", self.time_local, self.offset)
